@@ -14,7 +14,6 @@ export default function ItemsList() {
   const [actionError, setActionError] = useState(null)
 
   const queryClient = useQueryClient()
-
   const queryKey = ['items', filterTyp, debouncedSearch]
 
   const {
@@ -108,6 +107,7 @@ export default function ItemsList() {
       setActionError('Kraj i nominał są wymagane.')
       return
     }
+
     setActionError(null)
     updateMutation.mutate({
       id: selectedItem.id,
@@ -133,20 +133,22 @@ export default function ItemsList() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-500">Wczytywanie kolekcji...</p>
+        <p role="status" aria-live="polite" className="text-gray-600">
+          Wczytywanie kolekcji...
+        </p>
       </div>
     )
   }
 
   if (isError) {
     return (
-      <div className="p-4 max-w-md mx-auto">
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+      <div className="mx-auto max-w-md p-4">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error?.message || 'Nie udało się wczytać przedmiotów.'}
         </div>
         <button
           onClick={() => refetch()}
-          className="mt-3 w-full py-2 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200"
+          className="mt-3 w-full rounded-lg bg-gray-100 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
         >
           Spróbuj ponownie
         </button>
@@ -159,8 +161,8 @@ export default function ItemsList() {
 
     if (isEditing) {
       return (
-        <div className="max-w-md mx-auto p-4 space-y-4">
-          <button onClick={cancelEditing} className="text-gray-500 font-medium text-sm">
+        <div className="mx-auto max-w-md space-y-4 p-4">
+          <button onClick={cancelEditing} className="text-sm font-medium text-gray-500">
             Anuluj
           </button>
 
@@ -171,7 +173,7 @@ export default function ItemsList() {
               <button
                 type="button"
                 onClick={() => handleEditChange('typ', 'moneta')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 rounded-lg px-4 py-2 font-medium transition-colors ${
                   editForm.typ === 'moneta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
                 }`}
               >
@@ -180,7 +182,7 @@ export default function ItemsList() {
               <button
                 type="button"
                 onClick={() => handleEditChange('typ', 'banknot')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 rounded-lg px-4 py-2 font-medium transition-colors ${
                   editForm.typ === 'banknot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
                 }`}
               >
@@ -190,18 +192,20 @@ export default function ItemsList() {
 
             <EditField label="Kraj *" value={editForm.kraj} onChange={(v) => handleEditChange('kraj', v)} />
             <EditField label="Nominał *" value={editForm.nominal} onChange={(v) => handleEditChange('nominal', v)} />
+
             <div className="flex gap-3">
               <EditField label="Rok" type="number" value={editForm.rok} onChange={(v) => handleEditChange('rok', v)} />
               <EditField label="Stan" value={editForm.stan} onChange={(v) => handleEditChange('stan', v)} />
             </div>
+
             <EditField label="Wariant" value={editForm.wariant} onChange={(v) => handleEditChange('wariant', v)} />
 
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 checked={editForm.unikat}
                 onChange={(e) => handleEditChange('unikat', e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700">To unikat</span>
             </label>
@@ -217,18 +221,18 @@ export default function ItemsList() {
             <EditField label="Status" value={editForm.status} onChange={(v) => handleEditChange('status', v)} />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Uwagi</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Uwagi</label>
               <textarea
                 value={editForm.uwagi}
                 onChange={(e) => handleEditChange('uwagi', e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
               />
             </div>
           </div>
 
           {actionError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {actionError}
             </div>
           )}
@@ -236,7 +240,7 @@ export default function ItemsList() {
           <button
             onClick={saveEdit}
             disabled={updateMutation.isPending}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+            className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300"
           >
             {updateMutation.isPending ? 'Zapisywanie...' : 'Zapisz zmiany'}
           </button>
@@ -245,27 +249,27 @@ export default function ItemsList() {
     }
 
     return (
-      <div className="max-w-md mx-auto p-4 space-y-4">
-        <button onClick={() => setSelectedItem(null)} className="text-blue-600 font-medium text-sm">
+      <div className="mx-auto max-w-md space-y-4 p-4">
+        <button onClick={() => setSelectedItem(null)} className="text-sm font-medium text-blue-600">
           ← Wróć do listy
         </button>
 
         <div className="grid grid-cols-2 gap-2">
           {photos.awers && (
-            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img src={photos.awers} alt="Awers" className="w-full h-full object-cover" />
-              <p className="text-center text-xs text-gray-500 py-1">Awers</p>
+            <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+              <img src={photos.awers} alt="Awers" className="h-full w-full object-cover" />
+              <p className="py-1 text-center text-xs text-gray-500">Awers</p>
             </div>
           )}
           {photos.rewers && (
-            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img src={photos.rewers} alt="Rewers" className="w-full h-full object-cover" />
-              <p className="text-center text-xs text-gray-500 py-1">Rewers</p>
+            <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+              <img src={photos.rewers} alt="Rewers" className="h-full w-full object-cover" />
+              <p className="py-1 text-center text-xs text-gray-500">Rewers</p>
             </div>
           )}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
           <DetailRow label="Typ" value={selectedItem.typ} />
           <DetailRow label="Kraj" value={selectedItem.kraj} />
           <DetailRow label="Nominał" value={selectedItem.nominal} />
@@ -283,7 +287,7 @@ export default function ItemsList() {
         </div>
 
         {actionError && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {actionError}
           </div>
         )}
@@ -291,14 +295,15 @@ export default function ItemsList() {
         <div className="flex gap-2">
           <button
             onClick={startEditing}
-            className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700"
           >
             Edytuj
           </button>
+
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex-1 py-3 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+              className="flex-1 rounded-lg bg-red-50 py-3 font-medium text-red-600 transition-colors hover:bg-red-100"
             >
               Usuń
             </button>
@@ -306,12 +311,13 @@ export default function ItemsList() {
             <button
               onClick={() => deleteMutation.mutate(selectedItem.id)}
               disabled={deleteMutation.isPending}
-              className="flex-1 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-gray-300 transition-colors"
+              className="flex-1 rounded-lg bg-red-600 py-3 font-medium text-white transition-colors hover:bg-red-700 disabled:bg-gray-300"
             >
               {deleteMutation.isPending ? 'Usuwanie...' : 'Potwierdź usunięcie'}
             </button>
           )}
         </div>
+
         {confirmDelete && !deleteMutation.isPending && (
           <button onClick={() => setConfirmDelete(false)} className="w-full text-sm text-gray-500">
             Anuluj usuwanie
@@ -322,7 +328,7 @@ export default function ItemsList() {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-4">
+    <div className="mx-auto max-w-md space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-800">Moja kolekcja</h2>
         <span className="text-sm text-gray-500">
@@ -336,14 +342,16 @@ export default function ItemsList() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Szukaj po kraju, nominale, uwagach..."
-          className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Szukaj przedmiotów"
+          className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 pr-11 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
         />
+
         {search && (
           <button
             type="button"
             onClick={() => setSearch('')}
             aria-label="Wyczyść wyszukiwanie"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           >
             ×
           </button>
@@ -355,7 +363,7 @@ export default function ItemsList() {
           <button
             key={t}
             onClick={() => setFilterTyp(t)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium capitalize transition-colors ${
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium capitalize transition-colors ${
               filterTyp === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -371,7 +379,9 @@ export default function ItemsList() {
       )}
 
       {items.length === 0 ? (
-        <p className="text-center text-gray-400 py-8">Brak przedmiotów do wyświetlenia.</p>
+        <p role="status" aria-live="polite" className="py-8 text-center text-gray-400">
+          Brak przedmiotów do wyświetlenia.
+        </p>
       ) : (
         <>
           <div className="space-y-2">
@@ -381,30 +391,34 @@ export default function ItemsList() {
                 <button
                   key={item.id}
                   onClick={() => openItem(item)}
-                  className="w-full flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  className="w-full rounded-lg border border-gray-200 bg-white p-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                 >
-                  <div className="w-14 h-14 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                    {thumb ? (
-                      <img src={thumb} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
-                        brak
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                      {thumb ? (
+                        <img src={thumb} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-gray-300">
+                          brak
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-gray-800">
+                        {item.kraj} · {item.nominal}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {item.typ}{item.rok ? ` · ${item.rok}` : ''}
+                      </p>
+                    </div>
+
+                    {item.unikat && (
+                      <span className="flex-shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-700">
+                        unikat
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate">
-                      {item.kraj} · {item.nominal}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {item.typ}{item.rok ? ` · ${item.rok}` : ''}
-                    </p>
-                  </div>
-                  {item.unikat && (
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full flex-shrink-0">
-                      unikat
-                    </span>
-                  )}
                 </button>
               )
             })}
@@ -414,7 +428,7 @@ export default function ItemsList() {
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className="w-full py-3 bg-gray-100 rounded-lg font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              className="w-full rounded-lg bg-gray-100 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
             >
               {isFetchingNextPage ? 'Wczytywanie...' : 'Wczytaj więcej'}
             </button>
@@ -427,10 +441,11 @@ export default function ItemsList() {
 
 function DetailRow({ label, value }) {
   if (value === null || value === undefined || value === '') return null
+
   return (
     <div className="flex justify-between px-4 py-2.5 text-sm">
       <span className="text-gray-500">{label}</span>
-      <span className="text-gray-800 font-medium">{value}</span>
+      <span className="font-medium text-gray-800">{value}</span>
     </div>
   )
 }
@@ -438,12 +453,12 @@ function DetailRow({ label, value }) {
 function EditField({ label, value, onChange, type = 'text' }) {
   return (
     <div className="flex-1">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
       />
     </div>
   )
