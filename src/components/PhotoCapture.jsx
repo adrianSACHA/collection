@@ -11,27 +11,27 @@ export default function PhotoCapture({ onPhotosReady }) {
     if (!file) return
 
     const previewUrl = URL.createObjectURL(file)
-    
+    const newPhoto = { file, previewUrl }
+
+    let nextAwers = awers
+    let nextRewers = rewers
+
     if (side === 'awers') {
-      setAwers({ file, previewUrl })
+      nextAwers = newPhoto
+      setAwers(newPhoto)
     } else {
-      setRewers({ file, previewUrl })
+      nextRewers = newPhoto
+      setRewers(newPhoto)
     }
 
-    // Automatycznie przejdź do drugiej strony po zrobieniu zdjęcia
-    if (side === 'awers' && !rewers) {
+    if (side === 'awers' && !nextRewers) {
       setActiveSide('rewers')
-    } else if (side === 'rewers' && !awers) {
+    } else if (side === 'rewers' && !nextAwers) {
       setActiveSide('awers')
     }
 
-    // Powiadom rodzica, jeśli obie strony są gotowe
-    if ((side === 'awers' && rewers) || (side === 'rewers' && awers)) {
-      const photos = {
-        awers: side === 'awers' ? { file, previewUrl } : awers,
-        rewers: side === 'rewers' ? { file, previewUrl } : rewers
-      }
-      onPhotosReady(photos)
+    if (nextAwers && nextRewers && onPhotosReady) {
+      onPhotosReady({ awers: nextAwers, rewers: nextRewers })
     }
   }
 
@@ -44,9 +44,10 @@ export default function PhotoCapture({ onPhotosReady }) {
     setActiveSide(side)
   }
 
+  const currentPhoto = activeSide === 'awers' ? awers : rewers
+
   return (
     <div className="space-y-4">
-      {/* Prze łącznik stron */}
       <div className="flex gap-2">
         <button
           type="button"
@@ -72,39 +73,28 @@ export default function PhotoCapture({ onPhotosReady }) {
         </button>
       </div>
 
-      {/* Podgląd zdjęcia */}
       <div className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border-2 border-dashed border-gray-300">
-        {activeSide === 'awers' && awers && (
+        {currentPhoto ? (
           <img
-            src={awers.previewUrl}
-            alt="Awers"
+            src={currentPhoto.previewUrl}
+            alt={activeSide === 'awers' ? 'Awers' : 'Rewers'}
             className="w-full h-full object-cover"
           />
-        )}
-        {activeSide === 'rewers' && rewers && (
-          <img
-            src={rewers.previewUrl}
-            alt="Rewers"
-            className="w-full h-full object-cover"
-          />
-        )}
-        
-        {!((activeSide === 'awers' && awers) || (activeSide === 'rewers' && rewers)) && (
+        ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
             <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <span className="text-sm">
-              {activeSide === 'awers' ? 'Zróż zdjęcie awersu' : 'Zróż zdjęcie rewersu'}
+              {activeSide === 'awers' ? 'Zrób zdjęcie awersu' : 'Zrób zdjęcie rewersu'}
             </span>
           </div>
         )}
       </div>
 
-      {/* Przycisk aparatu */}
       <div className="flex justify-center">
-        {((activeSide === 'awers' && awers) || (activeSide === 'rewers' && rewers)) ? (
+        {currentPhoto ? (
           <button
             type="button"
             onClick={() => retakePhoto(activeSide)}
@@ -132,7 +122,6 @@ export default function PhotoCapture({ onPhotosReady }) {
         )}
       </div>
 
-      {/* Status */}
       <div className="flex justify-center gap-4 text-sm">
         <span className={awers ? 'text-green-600' : 'text-gray-400'}>
           {awers ? '✓ Awers' : '○ Awers'}
