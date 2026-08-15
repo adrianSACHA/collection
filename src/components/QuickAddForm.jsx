@@ -1,40 +1,88 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import PhotoCapture from './PhotoCapture'
 import { uploadCoinPhotos } from '../lib/uploadPhoto'
-import { supabase } from '../lib/supabase'
+import { insertItem } from '../lib/itemsApi'
 
 export default function QuickAddForm({ onSaved }) {
+  const [typ, setTyp] = useState('moneta')
   const [kraj, setKraj] = useState('')
   const [nominal, setNominal] = useState('')
   const [rok, setRok] = useState('')
-  const [typ, setTyp] = useState('')
   const [stan, setStan] = useState('')
+  const [wariant, setWariant] = useState('')
+  const [unikat, setUnikat] = useState(false)
   const [cenaZakupu, setCenaZakupu] = useState('')
+  const [dataZakupu, setDataZakupu] = useState('')
+  const [sprzedawca, setSprzedawca] = useState('')
+  const [wartoscAktualna, setWartoscAktualna] = useState('')
+  const [lokalizacja, setLokalizacja] = useState('')
   const [uwagi, setUwagi] = useState('')
   const [photos, setPhotos] = useState(null)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [photoCaptureKey, setPhotoCaptureKey] = useState(0)
+
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!success) return
+    const timeout = setTimeout(() => setSuccess(false), 4000)
+    return () => clearTimeout(timeout)
+  }, [success])
 
   const resetForm = () => {
+    setTyp('moneta')
     setKraj('')
     setNominal('')
     setRok('')
-    setTyp('')
     setStan('')
+    setWariant('')
+    setUnikat(false)
     setCenaZakupu('')
+    setDataZakupu('')
+    setSprzedawca('')
+    setWartoscAktualna('')
+    setLokalizacja('')
     setUwagi('')
     setPhotos(null)
+    setPhotoCaptureKey((k) => k + 1)
   }
 
-  const isFormValid = kraj.trim() && nominal.trim() && photos
+  const addMutation = useMutation({
+    mutationFn: async (payload) => {
+      const item = await insertItem(payload)
+      await uploadCoinPhotos(photos, item.id)
+      return item
+    },
+    onSuccess: (item) => {
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+      setSuccess(true)
+      resetForm()
+      if (onSaved) onSaved(item)
+    },
+    onError: (err) => setError(err.message || 'Wystąpił nieznany błąd podczas zapisu.'),
+  })
 
-  const handleSubmit = async (e) => {
+  const isFormValid = kraj.trim() && nominal.trim() && typ && photos
+
+  const clearFeedback = () => {
+    if (success) setSuccess(false)
+    if (error) setError(null)
+  }
+
+  const handleSubmit = (e) => {
     e.preventDefault()
     setError(null)
+    setSuccess(false)
 
     if (!kraj.trim() || !nominal.trim()) {
       setError('Podaj przynajmniej kraj i nominał.')
+      return
+    }
+    if (!typ) {
+      setError('Wybierz typ: moneta lub banknot.')
       return
     }
     if (!photos) {
@@ -42,41 +90,58 @@ export default function QuickAddForm({ onSaved }) {
       return
     }
 
-    setSaving(true)
-    try {
-      const { data: item, error: insertError } = await supabase
-        .from('items')
-        .insert({
-          kraj: kraj.trim(),
-          nominal: nominal.trim(),
-          rok: rok ? parseInt(rok, 10) : null,
-          typ: typ.trim() || null,
-          stan: stan.trim() || null,
-          cena_zakupu: cenaZakupu ? parseFloat(cenaZakupu) : null,
-          uwagi: uwagi.trim() || null,
-        })
-        .select()
-        .single()
-
-      if (insertError) throw insertError
-
-      await uploadCoinPhotos(photos, item.id)
-
-      setSuccess(true)
-      resetForm()
-      if (onSaved) onSaved(item)
-    } catch (err) {
-      setError(err.message || 'Wystąpił nieznany błąd podczas zapisu.')
-    } finally {
-      setSaving(false)
-    }
+    addMutation.mutate({
+      typ,
+      kraj: kraj.trim(),
+      nominal: nominal.trim(),
+      rok: rok ? parseInt(rok, 10) : null,
+      stan: stan.trim() || null,
+      wariant: wariant.trim() || null,
+      unikat,
+      cena_zakupu: cenaZakupu ? parseFloat(cenaZakupu) : null,
+      data_zakupu: dataZakupu || null,
+      sprzedawca: sprzedawca.trim() || null,
+      wartosc_aktualna: wartoscAktualna ? parseFloat(wartoscAktualna) : null,
+      lokalizacja: lokalizacja.trim() || null,
+      uwagi: uwagi.trim() || null,
+    })
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto p-4">
-      <h2 className="text-xl font-semibold text-gray-800">Dodaj monetę</h2>
+      <h2 className="text-xl font-semibold text-gray-800">Dodaj nowy</h2>
 
       <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Typ *
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setTyp('moneta'); clearFeedback() }}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                typ === 'moneta'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Moneta
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTyp('banknot'); clearFeedback() }}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                typ === 'banknot'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Banknot
+            </button>
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Kraj *
@@ -84,7 +149,7 @@ export default function QuickAddForm({ onSaved }) {
           <input
             type="text"
             value={kraj}
-            onChange={(e) => setKraj(e.target.value)}
+            onChange={(e) => { setKraj(e.target.value); clearFeedback() }}
             placeholder="np. Polska"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -97,7 +162,7 @@ export default function QuickAddForm({ onSaved }) {
           <input
             type="text"
             value={nominal}
-            onChange={(e) => setNominal(e.target.value)}
+            onChange={(e) => { setNominal(e.target.value); clearFeedback() }}
             placeholder="np. 5 zł"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -118,34 +183,6 @@ export default function QuickAddForm({ onSaved }) {
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cena zakupu (PLN)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={cenaZakupu}
-              onChange={(e) => setCenaZakupu(e.target.value)}
-              placeholder="np. 25.00"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Typ
-            </label>
-            <input
-              type="text"
-              value={typ}
-              onChange={(e) => setTyp(e.target.value)}
-              placeholder="np. moneta"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Stan
             </label>
             <input
@@ -156,6 +193,20 @@ export default function QuickAddForm({ onSaved }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Cena zakupu (PLN)
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={cenaZakupu}
+            onChange={(e) => setCenaZakupu(e.target.value)}
+            placeholder="np. 25.00"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
         <div>
@@ -172,11 +223,98 @@ export default function QuickAddForm({ onSaved }) {
         </div>
       </div>
 
+      <button
+        type="button"
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className="w-full text-sm text-blue-600 font-medium py-2 hover:text-blue-700"
+      >
+        {showAdvanced ? '− Ukryj dodatkowe pola' : '+ Pokaż dodatkowe pola'}
+      </button>
+
+      {showAdvanced && (
+        <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Wariant
+            </label>
+            <input
+              type="text"
+              value={wariant}
+              onChange={(e) => setWariant(e.target.value)}
+              placeholder="np. odmiana stempla"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={unikat}
+              onChange={(e) => setUnikat(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">To unikat</span>
+          </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Data zakupu
+            </label>
+            <input
+              type="date"
+              value={dataZakupu}
+              onChange={(e) => setDataZakupu(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sprzedawca
+            </label>
+            <input
+              type="text"
+              value={sprzedawca}
+              onChange={(e) => setSprzedawca(e.target.value)}
+              placeholder="np. nazwa sklepu / użytkownika"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Wartość aktualna (PLN)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={wartoscAktualna}
+              onChange={(e) => setWartoscAktualna(e.target.value)}
+              placeholder="np. 35.00"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lokalizacja
+            </label>
+            <input
+              type="text"
+              value={lokalizacja}
+              onChange={(e) => setLokalizacja(e.target.value)}
+              placeholder="np. album 2, str. 14"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Zdjęcia *
         </label>
-        <PhotoCapture onPhotosReady={setPhotos} />
+        <PhotoCapture key={photoCaptureKey} onPhotosReady={(p) => { setPhotos(p); clearFeedback() }} />
       </div>
 
       {error && (
@@ -187,16 +325,16 @@ export default function QuickAddForm({ onSaved }) {
 
       {success && (
         <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-          Moneta zapisana pomyślnie!
+          Zapisano pomyślnie!
         </div>
       )}
 
       <button
         type="submit"
-        disabled={!isFormValid || saving}
+        disabled={!isFormValid || addMutation.isPending}
         className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
       >
-        {saving ? 'Zapisywanie...' : 'Zapisz monetę'}
+        {addMutation.isPending ? 'Zapisywanie...' : 'Zapisz'}
       </button>
     </form>
   )
