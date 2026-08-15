@@ -1,15 +1,21 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import QuickAddForm from './components/QuickAddForm'
+import ItemsList from './components/ItemsList'
 
 function App() {
+  const [view, setView] = useState('lista')
+
   return (
-    <div className="min-h-screen bg-blue-500 flex items-center justify-center">
-      <h1 className="text-white text-4xl font-bold">
-        Tailwind działa!
-      </h1>
+    <div>
+      <div className="flex border-b">
+        <button onClick={() => setView('lista')} className={view === 'lista' ? 'font-bold' : ''}>
+          Kolekcja
+        </button>
+        <button onClick={() => setView('dodaj')} className={view === 'dodaj' ? 'font-bold' : ''}>
+          Dodaj
+        </button>
+      </div>
+      {view === 'lista' ? <ItemsList /> : <QuickAddForm onSaved={() => setView('lista')} />}
     </div>
   )
 }
