@@ -66,9 +66,13 @@ export async function fetchItemsPage({ pageParam = 0, filterTyp = 'wszystkie', s
 }
 
 export async function insertItem(payload) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData?.user) throw new Error('Nie jesteś zalogowany.')
+
   const { data, error } = await supabase
     .from('items')
-    .insert(payload)
+    .insert({ ...payload, user_id: userData.user.id })
     .select()
     .single()
 
