@@ -108,272 +108,306 @@ export default function QuickAddForm({ onSaved }) {
   }
 
   const toggleClass = (active) =>
-    `min-h-[44px] flex-1 rounded-xl border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 ${
+    `min-h-[44px] flex-1 rounded-xl border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px] ${
       active
         ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
         : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
     }`
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6 p-4">
-      <h2 className="text-xl font-semibold text-gray-800">Dodaj nowy</h2>
+    <form onSubmit={handleSubmit} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
+      <div className="mx-auto max-w-md lg:max-w-6xl">
+        <h2 className="mb-6 text-xl font-semibold text-gray-800">Dodaj nowy</h2>
 
-      <div className="space-y-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Typ *</label>
-          <div className="flex gap-2">
+        {/* Mobile: single column | Desktop: 2 columns */}
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:gap-8">
+          {/* Lewa kolumna: formularz danych */}
+          <div className="space-y-3">
+            {/* Typ */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Typ *</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  aria-pressed={typ === 'moneta'}
+                  aria-label="Wybierz typ monety"
+                  className={toggleClass(typ === 'moneta')}
+                  onClick={() => {
+                    setTyp('moneta')
+                    clearFeedback()
+                  }}
+                >
+                  Moneta
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={typ === 'banknot'}
+                  aria-label="Wybierz typ banknotu"
+                  className={toggleClass(typ === 'banknot')}
+                  onClick={() => {
+                    setTyp('banknot')
+                    clearFeedback()
+                  }}
+                >
+                  Banknot
+                </button>
+              </div>
+            </div>
+
+            {/* Kraj */}
+            <div>
+              <label htmlFor="kraj" className="mb-1 block text-sm font-medium text-gray-700">
+                Kraj <span aria-hidden="true">*</span>
+              </label>
+              <input
+                id="kraj"
+                name="kraj"
+                type="text"
+                value={kraj}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(error && !kraj.trim())}
+                aria-describedby={error ? 'form-feedback' : undefined}
+                onChange={(e) => {
+                  setKraj(e.target.value)
+                  clearFeedback()
+                }}
+                placeholder="np. Polska"
+                className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+              />
+            </div>
+
+            {/* Nominał */}
+            <div>
+              <label htmlFor="nominal" className="mb-1 block text-sm font-medium text-gray-700">
+                Nominał <span aria-hidden="true">*</span>
+              </label>
+              <input
+                id="nominal"
+                name="nominal"
+                type="text"
+                value={nominal}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(error && !nominal.trim())}
+                aria-describedby={error ? 'form-feedback' : undefined}
+                onChange={(e) => {
+                  setNominal(e.target.value)
+                  clearFeedback()
+                }}
+                placeholder="np. 5 zł"
+                className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+              />
+            </div>
+
+            {/* Rok i Stan */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label htmlFor="rok" className="mb-1 block text-sm font-medium text-gray-700">
+                  Rok
+                </label>
+                <input
+                  id="rok"
+                  type="number"
+                  value={rok}
+                  onChange={(e) => setRok(e.target.value)}
+                  placeholder="np. 1975"
+                  className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                />
+              </div>
+
+              <div className="flex-1">
+                <label htmlFor="stan" className="mb-1 block text-sm font-medium text-gray-700">
+                  Stan
+                </label>
+                <input
+                  id="stan"
+                  type="text"
+                  value={stan}
+                  onChange={(e) => setStan(e.target.value)}
+                  placeholder="np. UNC"
+                  className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                />
+              </div>
+            </div>
+
+            {/* Cena zakupu */}
+            <div>
+              <label htmlFor="cena-zakupu" className="mb-1 block text-sm font-medium text-gray-700">
+                Cena zakupu (PLN)
+              </label>
+              <input
+                id="cena-zakupu"
+                type="number"
+                step="0.01"
+                value={cenaZakupu}
+                onChange={(e) => setCenaZakupu(e.target.value)}
+                placeholder="np. 25.00"
+                className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+              />
+            </div>
+
+            {/* Uwagi */}
+            <div>
+              <label htmlFor="uwagi" className="mb-1 block text-sm font-medium text-gray-700">
+                Uwagi
+              </label>
+              <textarea
+                id="uwagi"
+                value={uwagi}
+                onChange={(e) => setUwagi(e.target.value)}
+                placeholder="Opcjonalne uwagi o stanie, pochodzeniu itd."
+                rows={3}
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+              />
+            </div>
+
+            {/* Przycisk dla pól zaawansowanych */}
             <button
               type="button"
-              aria-pressed={typ === 'moneta'}
-              aria-label="Wybierz typ monety"
-              className={toggleClass(typ === 'moneta')}
-              onClick={() => {
-                setTyp('moneta')
-                clearFeedback()
-              }}
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
             >
-              Moneta
+              {showAdvanced ? '− Ukryj dodatkowe pola' : '+ Pokaż dodatkowe pola'}
             </button>
 
-            <button
-              type="button"
-              aria-pressed={typ === 'banknot'}
-              aria-label="Wybierz typ banknotu"
-              className={toggleClass(typ === 'banknot')}
-              onClick={() => {
-                setTyp('banknot')
-                clearFeedback()
-              }}
-            >
-              Banknot
-            </button>
+            {/* Pola zaawansowane */}
+            {showAdvanced && (
+              <div className="space-y-3 rounded-lg bg-gray-100 p-3 lg:bg-white">
+                <div>
+                  <label htmlFor="wariant" className="mb-1 block text-sm font-medium text-gray-700">
+                    Wariant
+                  </label>
+                  <input
+                    id="wariant"
+                    type="text"
+                    value={wariant}
+                    onChange={(e) => setWariant(e.target.value)}
+                    placeholder="np. odmiana stempla"
+                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                  />
+                </div>
+
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={unikat}
+                    onChange={(e) => setUnikat(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">To unikat</span>
+                </label>
+
+                <div>
+                  <label htmlFor="data-zakupu" className="mb-1 block text-sm font-medium text-gray-700">
+                    Data zakupu
+                  </label>
+                  <input
+                    id="data-zakupu"
+                    type="date"
+                    value={dataZakupu}
+                    onChange={(e) => setDataZakupu(e.target.value)}
+                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="sprzedawca" className="mb-1 block text-sm font-medium text-gray-700">
+                    Sprzedawca
+                  </label>
+                  <input
+                    id="sprzedawca"
+                    type="text"
+                    value={sprzedawca}
+                    onChange={(e) => setSprzedawca(e.target.value)}
+                    placeholder="np. nazwa sklepu / użytkownika"
+                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="wartosc-aktualna" className="mb-1 block text-sm font-medium text-gray-700">
+                    Wartość aktualna (PLN)
+                  </label>
+                  <input
+                    id="wartosc-aktualna"
+                    type="number"
+                    step="0.01"
+                    value={wartoscAktualna}
+                    onChange={(e) => setWartoscAktualna(e.target.value)}
+                    placeholder="np. 35.00"
+                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="lokalizacja" className="mb-1 block text-sm font-medium text-gray-700">
+                    Lokalizacja
+                  </label>
+                  <input
+                    id="lokalizacja"
+                    type="text"
+                    value={lokalizacja}
+                    onChange={(e) => setLokalizacja(e.target.value)}
+                    placeholder="np. album 2, str. 14"
+                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Prawa kolumna: zdjęcia (tylko na desktop) */}
+          <div className="hidden lg:flex lg:flex-col lg:gap-4">
+            <div className="sticky top-8">
+              <label className="mb-2 block text-sm font-medium text-gray-700">Zdjęcia *</label>
+              <PhotoCapture
+                key={photoCaptureKey}
+                onPhotosReady={(p) => {
+                  setPhotos(p)
+                  clearFeedback()
+                }}
+              />
+            </div>
           </div>
         </div>
 
-        <div>
-          <label htmlFor="kraj" className="mb-1 block text-sm font-medium text-gray-700">
-            Kraj <span aria-hidden="true">*</span>
-          </label>
-          <input
-            id="kraj"
-            name="kraj"
-            type="text"
-            value={kraj}
-            required
-            aria-required="true"
-            aria-invalid={Boolean(error && !kraj.trim())}
-            aria-describedby={error ? 'form-feedback' : undefined}
-            onChange={(e) => {
-              setKraj(e.target.value)
+        {/* Zdjęcia na mobile (poniżej danych) */}
+        <div className="mt-6 space-y-3 lg:hidden">
+          <label className="block text-sm font-medium text-gray-700">Zdjęcia *</label>
+          <PhotoCapture
+            key={photoCaptureKey}
+            onPhotosReady={(p) => {
+              setPhotos(p)
               clearFeedback()
             }}
-            placeholder="np. Polska"
-            className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           />
         </div>
 
-        <div>
-          <label htmlFor="nominal" className="mb-1 block text-sm font-medium text-gray-700">
-            Nominał <span aria-hidden="true">*</span>
-          </label>
-          <input
-            id="nominal"
-            name="nominal"
-            type="text"
-            value={nominal}
-            required
-            aria-required="true"
-            aria-invalid={Boolean(error && !nominal.trim())}
-            aria-describedby={error ? 'form-feedback' : undefined}
-            onChange={(e) => {
-              setNominal(e.target.value)
-              clearFeedback()
-            }}
-            placeholder="np. 5 zł"
-            className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
-        </div>
+        {/* Feedback i przyciski */}
+        <div className="mt-6 flex flex-col gap-3 lg:col-span-2">
+          {error && (
+            <div id="form-feedback" role="alert" aria-live="assertive" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label htmlFor="rok" className="mb-1 block text-sm font-medium text-gray-700">
-              Rok
-            </label>
-            <input
-              id="rok"
-              type="number"
-              value={rok}
-              onChange={(e) => setRok(e.target.value)}
-              placeholder="np. 1975"
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
+          {success && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+              Zapisano pomyślnie!
+            </div>
+          )}
 
-          <div className="flex-1">
-            <label htmlFor="stan" className="mb-1 block text-sm font-medium text-gray-700">
-              Stan
-            </label>
-            <input
-              id="stan"
-              type="text"
-              value={stan}
-              onChange={(e) => setStan(e.target.value)}
-              placeholder="np. UNC"
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="cena-zakupu" className="mb-1 block text-sm font-medium text-gray-700">
-            Cena zakupu (PLN)
-          </label>
-          <input
-            id="cena-zakupu"
-            type="number"
-            step="0.01"
-            value={cenaZakupu}
-            onChange={(e) => setCenaZakupu(e.target.value)}
-            placeholder="np. 25.00"
-            className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="uwagi" className="mb-1 block text-sm font-medium text-gray-700">
-            Uwagi
-          </label>
-          <textarea
-            id="uwagi"
-            value={uwagi}
-            onChange={(e) => setUwagi(e.target.value)}
-            placeholder="Opcjonalne uwagi o stanie, pochodzeniu itd."
-            rows={2}
-            className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
+          <button
+            type="submit"
+            disabled={!isFormValid || addMutation.isPending}
+            className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+          >
+            {addMutation.isPending ? 'Zapisywanie...' : 'Zapisz'}
+          </button>
         </div>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setShowAdvanced(!showAdvanced)}
-        className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-      >
-        {showAdvanced ? '− Ukryj dodatkowe pola' : '+ Pokaż dodatkowe pola'}
-      </button>
-
-      {showAdvanced && (
-        <div className="space-y-3 rounded-lg bg-gray-50 p-3">
-          <div>
-            <label htmlFor="wariant" className="mb-1 block text-sm font-medium text-gray-700">
-              Wariant
-            </label>
-            <input
-              id="wariant"
-              type="text"
-              value={wariant}
-              onChange={(e) => setWariant(e.target.value)}
-              placeholder="np. odmiana stempla"
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
-
-          <label className="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={unikat}
-              onChange={(e) => setUnikat(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm font-medium text-gray-700">To unikat</span>
-          </label>
-
-          <div>
-            <label htmlFor="data-zakupu" className="mb-1 block text-sm font-medium text-gray-700">
-              Data zakupu
-            </label>
-            <input
-              id="data-zakupu"
-              type="date"
-              value={dataZakupu}
-              onChange={(e) => setDataZakupu(e.target.value)}
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="sprzedawca" className="mb-1 block text-sm font-medium text-gray-700">
-              Sprzedawca
-            </label>
-            <input
-              id="sprzedawca"
-              type="text"
-              value={sprzedawca}
-              onChange={(e) => setSprzedawca(e.target.value)}
-              placeholder="np. nazwa sklepu / użytkownika"
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="wartosc-aktualna" className="mb-1 block text-sm font-medium text-gray-700">
-              Wartość aktualna (PLN)
-            </label>
-            <input
-              id="wartosc-aktualna"
-              type="number"
-              step="0.01"
-              value={wartoscAktualna}
-              onChange={(e) => setWartoscAktualna(e.target.value)}
-              placeholder="np. 35.00"
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="lokalizacja" className="mb-1 block text-sm font-medium text-gray-700">
-              Lokalizacja
-            </label>
-            <input
-              id="lokalizacja"
-              type="text"
-              value={lokalizacja}
-              onChange={(e) => setLokalizacja(e.target.value)}
-              placeholder="np. album 2, str. 14"
-              className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            />
-          </div>
-        </div>
-      )}
-
-      <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">Zdjęcia *</label>
-        <PhotoCapture
-          key={photoCaptureKey}
-          onPhotosReady={(p) => {
-            setPhotos(p)
-            clearFeedback()
-          }}
-        />
-      </div>
-
-      <div id="form-feedback" role="alert" aria-live="assertive" className="min-h-[20px]">
-        {error ? <span className="text-sm text-red-700">{error}</span> : null}
-      </div>
-
-      {success && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-          Zapisano pomyślnie!
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={!isFormValid || addMutation.isPending}
-        className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-      >
-        {addMutation.isPending ? 'Zapisywanie...' : 'Zapisz'}
-      </button>
     </form>
   )
 }
