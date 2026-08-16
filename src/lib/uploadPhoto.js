@@ -1,8 +1,11 @@
 import { supabase } from './supabase'
+import { compressImage } from './compressImage'
 
 /**
  * Wgrywa zdjęcie przedmiotu do Supabase Storage (bucket "photos")
  * i zapisuje odpowiadający wpis w tabeli "item_photos".
+ * Zdjęcie jest kompresowane w przeglądarce przed uploadem (patrz compressImage.js),
+ * żeby nie zapychać limitu storage.
  *
  * @param {File} file - plik zdjęcia (z inputa/kamery)
  * @param {string} itemId - uuid przedmiotu, do którego należy zdjęcie
@@ -14,15 +17,17 @@ export async function uploadPhoto(file, itemId, typ) {
     throw new Error('uploadPhoto: brak wymaganych parametrów (file, itemId, typ)')
   }
 
-  const fileExt = file.name.split('.').pop() || 'jpg'
-  const fileName = `${typ}.${fileExt}`
+  const compressedFile = await compressImage(file)
+
+  const fileName = `${typ}.jpg`
   const storagePath = `${itemId}/${fileName}`
 
   const { error: uploadError } = await supabase.storage
     .from('photos')
-    .upload(storagePath, file, {
+    .upload(storagePath, compressedFile, {
       cacheControl: '3600',
       upsert: true,
+      contentType: 'image/jpeg',
     })
 
   if (uploadError) {
