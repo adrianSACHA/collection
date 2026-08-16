@@ -14,6 +14,7 @@ export default function ItemFilters({ onResults, onLoading }) {
   const [stanyZachowaniList, setStanyZachowaniList] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [isExpanded, setIsExpanded] = useState(false) // Mobile toggle
 
   // Load stany_zachowania on mount
   useEffect(() => {
@@ -96,6 +97,7 @@ export default function ItemFilters({ onResults, onLoading }) {
 
   return (
     <div className="w-full rounded-lg border border-gray-200 bg-white p-4 lg:p-6">
+      {/* Header */}
       <h3 className="mb-4 text-lg font-semibold text-gray-800">Filtry</h3>
 
       {error && (
@@ -104,7 +106,8 @@ export default function ItemFilters({ onResults, onLoading }) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Always visible on mobile: Nominał & Kraj */}
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* Nominał */}
         <div>
           <label htmlFor="filter-nominal" className="mb-1 block text-sm font-medium text-gray-700">
@@ -134,72 +137,85 @@ export default function ItemFilters({ onResults, onLoading }) {
             className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           />
         </div>
+      </div>
 
-        {/* Rok */}
-        <div>
-          <label htmlFor="filter-rok" className="mb-1 block text-sm font-medium text-gray-700">
-            Rok
-          </label>
-          <input
-            id="filter-rok"
-            type="number"
-            value={rok}
-            onChange={(e) => setRok(e.target.value)}
-            placeholder="np. 2023"
-            className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
-        </div>
+      {/* Mobile toggle for additional filters */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="lg:hidden mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
+      >
+        {isExpanded ? '▼ Schowaj pozostałe' : '▶ Rozwiń pozostałe filtry'}
+      </button>
 
-        {/* Miasto wydania */}
-        <div>
-          <label htmlFor="filter-miasto" className="mb-1 block text-sm font-medium text-gray-700">
-            Miasto wydania
-          </label>
-          <input
-            id="filter-miasto"
-            type="text"
-            value={miasto_wydania}
-            onChange={(e) => setMiasto_wydania(e.target.value)}
-            placeholder="np. Warszawa"
-            className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
-        </div>
+      {/* Additional filters - hidden on mobile unless expanded, always visible on desktop */}
+      <div className={`${isExpanded ? 'block' : 'hidden'} lg:block mt-4`}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Rok */}
+          <div>
+            <label htmlFor="filter-rok" className="mb-1 block text-sm font-medium text-gray-700">
+              Rok
+            </label>
+            <input
+              id="filter-rok"
+              type="number"
+              value={rok}
+              onChange={(e) => setRok(e.target.value)}
+              placeholder="np. 2023"
+              className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            />
+          </div>
 
-        {/* Typ przedmiotu */}
-        <div>
-          <label htmlFor="filter-typ" className="mb-1 block text-sm font-medium text-gray-700">
-            Typ
-          </label>
-          <select
-            id="filter-typ"
-            value={typ_przedmiotu}
-            onChange={(e) => setTyp_przedmiotu(e.target.value)}
-            className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          >
-            <option value="wszystkie">-- Wszystkie --</option>
-            <option value="moneta">Moneta</option>
-            <option value="banknot">Banknot</option>
-          </select>
-        </div>
+          {/* Miasto wydania */}
+          <div>
+            <label htmlFor="filter-miasto" className="mb-1 block text-sm font-medium text-gray-700">
+              Miasto wydania
+            </label>
+            <input
+              id="filter-miasto"
+              type="text"
+              value={miasto_wydania}
+              onChange={(e) => setMiasto_wydania(e.target.value)}
+              placeholder="np. Warszawa"
+              className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            />
+          </div>
 
-        {/* Stan zachowania */}
-        <div>
-          <label htmlFor="filter-stan" className="mb-1 block text-sm font-medium text-gray-700">
-            Stan zachowania
-          </label>
-          <select
-            id="filter-stan"
-            value={stan_zachowania}
-            onChange={(e) => setStanZachowania(e.target.value)}
-            className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          >
-            <option value="">-- Wszystkie --</option>
-            {stanyZachowaniList.map((stan) => (
-              <option key={stan.kod} value={stan.kod}>
-                {stan.etykieta}
-              </option>
-            ))}
-          </select>
+          {/* Typ przedmiotu */}
+          <div>
+            <label htmlFor="filter-typ" className="mb-1 block text-sm font-medium text-gray-700">
+              Typ
+            </label>
+            <select
+              id="filter-typ"
+              value={typ_przedmiotu}
+              onChange={(e) => setTyp_przedmiotu(e.target.value)}
+              className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            >
+              <option value="wszystkie">-- Wszystkie --</option>
+              <option value="moneta">Moneta</option>
+              <option value="banknot">Banknot</option>
+            </select>
+          </div>
+
+          {/* Stan zachowania */}
+          <div>
+            <label htmlFor="filter-stan" className="mb-1 block text-sm font-medium text-gray-700">
+              Stan zachowania
+            </label>
+            <select
+              id="filter-stan"
+              value={stan_zachowania}
+              onChange={(e) => setStanZachowania(e.target.value)}
+              className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            >
+              <option value="">-- Wszystkie --</option>
+              {stanyZachowaniList.map((stan) => (
+                <option key={stan.kod} value={stan.kod}>
+                  {stan.etykieta}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

@@ -1,12 +1,8 @@
 import { useState } from 'react'
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchItemsPage, updateItem, deleteItem } from '../lib/itemsApi'
-import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { updateItem, deleteItem } from '../lib/itemsApi'
 
-export default function ItemsList() {
-  const [filterTyp, setFilterTyp] = useState('wszystkie')
-  const [search, setSearch] = useState('')
-  const debouncedSearch = useDebouncedValue(search, 400)
+export default function ItemsList({ filteredItems }) {
   const [selectedItem, setSelectedItem] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState(null)
@@ -14,29 +10,11 @@ export default function ItemsList() {
   const [actionError, setActionError] = useState(null)
 
   const queryClient = useQueryClient()
-  const queryKey = ['items', filterTyp, debouncedSearch]
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    refetch,
-  } = useInfiniteQuery({
-    queryKey,
-    queryFn: ({ pageParam }) => fetchItemsPage({ pageParam, filterTyp, search: debouncedSearch }),
-    getNextPageParam: (lastPage) => lastPage.nextPage,
-    initialPageParam: 0,
-    placeholderData: (previousData) => previousData,
-  })
-
-  const items = data?.pages.flatMap((p) => p.items) || []
-  const photosByItem = data?.pages.reduce((acc, p) => ({ ...acc, ...p.photosByItem }), {}) || {}
-  const totalCount = data?.pages[0]?.totalCount ?? 0
+  // Use filteredItems if provided, otherwise show empty
+  const items = filteredItems || []
+  const photosByItem = {} // Not used in filtered view
+  const totalCount = items.length
 
   const totalValue = items.reduce(
     (sum, item) => sum + (item.wartosc_aktualna || item.cena_zakupu || 0),
@@ -130,34 +108,8 @@ export default function ItemsList() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p role="status" aria-live="polite" className="text-gray-600">
-          Wczytywanie kolekcji...
-        </p>
-      </div>
-    )
-  }
-
-  if (isError) {
-    return (
-      <div className="mx-auto max-w-md p-4">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error?.message || 'Nie udało się wczytać przedmiotów.'}
-        </div>
-        <button
-          onClick={() => refetch()}
-          className="mt-3 w-full rounded-lg bg-gray-100 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-        >
-          Spróbuj ponownie
-        </button>
-      </div>
-    )
-  }
-
   if (selectedItem) {
-    const photos = photosByItem[selectedItem.id] || {}
+    const photos = {} // Not used in filtered view
 
     if (isEditing) {
       return (
@@ -328,116 +280,58 @@ export default function ItemsList() {
   }
 
   return (
-    <div className="min-h-screen lg:p-8">
-      <div className="mx-auto max-w-md space-y-4 p-4 lg:max-w-6xl lg:p-0">
+    <div className="w-full">
+      <div className="mx-auto max-w-md space-y-3 lg:max-w-6xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">Moja kolekcja</h2>
-          <span className="text-sm text-gray-500">
-            {isFetching && !isFetchingNextPage ? 'Odświeżanie...' : `${totalCount} pozycji`}
-          </span>
+          <h2 className="text-lg font-semibold text-gray-800">Wyniki</h2>
+          <span className="text-sm text-gray-500">{totalCount} pozycji</span>
         </div>
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Szukaj po kraju, nominale, uwagach..."
-                aria-label="Szukaj przedmiotów"
-                className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 pr-11 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:min-h-[40px]"
-              />
-
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  aria-label="Wyczyść wyszukiwanie"
-                  className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:h-9 lg:w-9"
-                >
-                  ×
-                </button>
-              )}
-            </div>
+        {filteredItems === null ? (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+            <p className="text-gray-500">Użyj filtrów powyżej aby wyświetlić przedmioty.</p>
           </div>
-
-          <div className="flex gap-2">
-            {['wszystkie', 'moneta', 'banknot'].map((t) => (
-              <button
-                key={t}
-                onClick={() => setFilterTyp(t)}
-                className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium capitalize transition-colors lg:flex-none ${
-                  filterTyp === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+        ) : items.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+            <p className="text-gray-500">Brak przedmiotów spełniających kryteria.</p>
           </div>
-        </div>
-
-        {items.length > 0 && (
-          <p className="text-sm text-gray-500">
-            Wartość (wczytane): <span className="font-medium text-gray-800">{totalValue.toFixed(2)} PLN</span>
-          </p>
-        )}
-
-        {items.length === 0 ? (
-          <p role="status" aria-live="polite" className="py-8 text-center text-gray-400">
-            Brak przedmiotów do wyświetlenia.
-          </p>
         ) : (
           <>
-            <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
-              {items.map((item) => {
-                const thumb = photosByItem[item.id]?.awers
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => openItem(item)}
-                    className="w-full rounded-lg border border-gray-200 bg-white p-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 lg:flex lg:flex-col"
-                  >
-                    <div className="flex items-center gap-3 lg:flex-col lg:gap-3">
-                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 lg:h-40 lg:w-full lg:rounded-lg">
-                        {thumb ? (
-                          <img src={thumb} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs text-gray-300">
-                            brak
-                          </div>
-                        )}
-                      </div>
+            {items.length > 0 && (
+              <p className="text-sm text-gray-600">
+                Wartość: <span className="font-semibold text-gray-800">{totalValue.toFixed(2)} PLN</span>
+              </p>
+            )}
 
-                      <div className="min-w-0 flex-1 lg:w-full">
-                        <p className="truncate font-medium text-gray-800">
-                          {item.kraj} · {item.nominal}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {item.typ}{item.rok ? ` · ${item.rok}` : ''}
-                        </p>
-                      </div>
-
-                      {item.unikat && (
-                        <span className="flex-shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-700 lg:self-start">
-                          unikat
-                        </span>
+            <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 overflow-hidden bg-white">
+              {items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => openItem(item)}
+                  className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-800">
+                        {item.kraj} · {item.nominal}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {item.typ_przedmiotu || item.typ}{item.rok ? ` · ${item.rok}` : ''}
+                        {item.stan_zachowania && ` · ${item.etykieta || item.stan_zachowania}`}
+                      </p>
+                    </div>
+                    <div className="ml-4 text-right flex-shrink-0">
+                      {item.cena_zakupu && (
+                        <p className="text-sm font-medium text-gray-700">{item.cena_zakupu} PLN</p>
+                      )}
+                      {item.wartosc_aktualna && (
+                        <p className="text-xs text-gray-500">Obecna: {item.wartosc_aktualna} PLN</p>
                       )}
                     </div>
-                  </button>
-                )
-              })}
+                  </div>
+                </button>
+              ))}
             </div>
-
-            {hasNextPage && (
-              <button
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
-                className="w-full rounded-lg bg-gray-100 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
-              >
-                {isFetchingNextPage ? 'Wczytywanie...' : 'Wczytaj więcej'}
-              </button>
-            )}
           </>
         )}
       </div>
