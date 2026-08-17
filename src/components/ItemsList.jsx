@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteItem } from '../lib/itemsApi'
+import { supabase } from '../lib/supabase'
 import ItemForm from './ItemForm'
 
 export default function ItemsList({ filteredItems }) {
@@ -8,6 +9,11 @@ export default function ItemsList({ filteredItems }) {
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [actionError, setActionError] = useState(null)
+
+  // Miniatury awersu dla listy: { item_id: url }
+  const [thumbnails, setThumbnails] = useState({})
+  // Zdjęcia wybranego przedmiotu (widok szczegółów): { typ: url }
+  const [selectedPhotos, setSelectedPhotos] = useState({})
 
   const queryClient = useQueryClient()
 
@@ -18,6 +24,61 @@ export default function ItemsList({ filteredItems }) {
     (sum, item) => sum + (item.wartosc_aktualna || item.cena_zakupu || 0),
     0
   )
+
+  // Wczytaj miniatury awersu dla widocznych przedmiotów na liście.
+  // Zależność to stabilny string (ID połączone przecinkiem), nie referencja
+  // tablicy `items` - inaczej `items = filteredItems || []` tworzy nową
+  // tablicę przy każdym renderze i powoduje nieskończoną pętlę renderowania.
+  useEffect(() => {
+    if (!items.length) {
+      setThumbnails({})
+      return
+    }
+
+    async function loadThumbnails() {
+      const ids = items.map((i) => i.id)
+      const { data, error } = await supabase
+        .from('item_photos')
+        .select('item_id, url')
+        .eq('typ', 'awers')
+        .in('item_id', ids)
+
+      if (error) {
+        console.error('Błąd wczytywania miniatur:', error)
+        return
+      }
+
+      const map = {}
+      for (const row of data || []) map[row.item_id] = row.url
+      setThumbnails(map)
+    }
+
+    loadThumbnails()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.map((i) => i.id).join(',')])
+
+  // Wczytaj zdjęcia wybranego przedmiotu (widok szczegółów, nie edycja).
+  useEffect(() => {
+    if (!selectedItem || isEditing) return
+
+    async function loadSelectedPhotos() {
+      const { data, error } = await supabase
+        .from('item_photos')
+        .select('typ, url')
+        .eq('item_id', selectedItem.id)
+
+      if (error) {
+        console.error('Błąd wczytywania zdjęć przedmiotu:', error)
+        return
+      }
+
+      const map = {}
+      for (const row of data || []) map[row.typ] = row.url
+      setSelectedPhotos(map)
+    }
+
+    loadSelectedPhotos()
+  }, [selectedItem, isEditing])
 
   const deleteMutation = useMutation({
     mutationFn: (itemId) => deleteItem(itemId),
@@ -46,7 +107,6 @@ export default function ItemsList({ filteredItems }) {
     setActionError(null)
   }
 
-  // Wywoływane przez ItemForm po udanym zapisie edycji.
   const handleSaved = (updatedItem) => {
     queryClient.invalidateQueries({ queryKey: ['items'] })
     setSelectedItem(updatedItem)
@@ -55,7 +115,6 @@ export default function ItemsList({ filteredItems }) {
 
   if (selectedItem) {
     if (isEditing) {
-      // Formularz edycji - dokładnie ten sam komponent co przy dodawaniu.
       return (
         <ItemForm
           itemId={selectedItem.id}
@@ -65,12 +124,43 @@ export default function ItemsList({ filteredItems }) {
       )
     }
 
-    // Widok szczegółów przedmiotu (bez zmian względem wcześniejszej wersji)
+    const hasMainPhotos = selectedPhotos.awers || selectedPhotos.rewers
+
     return (
       <div className="mx-auto max-w-md space-y-4 p-4">
         <button onClick={() => setSelectedItem(null)} className="text-sm font-medium text-blue-600">
           ← Wróć do listy
         </button>
+
+        {/* Awers / rewers: jedna kolumna, jedno pod drugim, duże */}
+        {hasMainPhotos && (
+          <div className="grid grid-cols-1 gap-2">
+            {selectedPhotos.awers && (
+              <div className="overflow-hidden rounded-lg bg-gray-100">
+                <img src={selectedPhotos.awers} alt="Awers" className="w-full object-contain" />
+                <p className="py-1 text-center text-xs text-gray-500">Awers</p>
+              </div>
+            )}
+            {selectedPhotos.rewers && (
+              <div className="overflow-hidden rounded-lg bg-gray-100">
+                <img src={selectedPhotos.rewers} alt="Rewers" className="w-full object-contain" />
+                <p className="py-1 text-center text-xs text-gray-500">Rewers</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Znak wodny: mała miniatura, osobno od awers/rewers */}
+        {selectedPhotos.znak_wodny && (
+          <div className="flex items-center gap-2">
+            <img
+              src={selectedPhotos.znak_wodny}
+              alt="Znak wodny"
+              className="h-16 w-16 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-100 object-contain"
+            />
+            <span className="text-xs text-gray-500">Znak wodny</span>
+          </div>
+        )}
 
         <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
           <DetailRow label="Typ" value={selectedItem.typ} />
@@ -82,7 +172,7 @@ export default function ItemsList({ filteredItems }) {
           <DetailRow label="Seria" value={selectedItem.seria} />
           <DetailRow label="Nadruk" value={selectedItem.nadruk} />
           <DetailRow label="Kod drukarni" value={selectedItem.kod_drukarni} />
-          <DetailRow label="Znak wodny" value={selectedItem.znak_wodny} />
+          <DetailRow label="Znak wodny (opis)" value={selectedItem.znak_wodny} />
           <DetailRow
             label="Stan zachowania"
             value={selectedItem.stan_zachowania_etykieta || selectedItem.stan_zachowania}
@@ -176,7 +266,14 @@ export default function ItemsList({ filteredItems }) {
                   onClick={() => openItem(item)}
                   className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {thumbnails[item.id] && (
+                      <img
+                        src={thumbnails[item.id]}
+                        alt=""
+                        className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-800">
                         {item.kraj} · {item.nominal}
