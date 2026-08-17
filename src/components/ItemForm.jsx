@@ -5,7 +5,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
   const isEditMode = !!itemId
 
   // Form fields
-  const [typ_przedmiotu, setTyp_przedmiotu] = useState('moneta')
+  const [typ, setTyp] = useState('moneta')
   const [nominal, setNominal] = useState('')
   const [kraj, setKraj] = useState('')
   const [rok, setRok] = useState('')
@@ -16,7 +16,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
   const [data_zakupu, setData_zakupu] = useState('')
   const [cena_zakupu, setCena_zakupu] = useState('')
   const [sprzedawca, setSprzedawca] = useState('')
-  const [notatki, setNotatki] = useState('')
+  const [uwagi, setUwagi] = useState('')
 
   // State
   const [stanyZachowaniList, setStanyZachowaniList] = useState([])
@@ -65,7 +65,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
       if (!data) throw new Error('Przedmiot nie znaleziony.')
 
       // Populate form
-      setTyp_przedmiotu(data.typ_przedmiotu || 'moneta')
+      setTyp(data.typ || 'moneta')
       setNominal(data.nominal || '')
       setKraj(data.kraj || '')
       setRok(data.rok ? String(data.rok) : '')
@@ -76,7 +76,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
       setData_zakupu(data.data_zakupu || '')
       setCena_zakupu(data.cena_zakupu ? String(data.cena_zakupu) : '')
       setSprzedawca(data.sprzedawca || '')
-      setNotatki(data.notatki || '')
+      setUwagi(data.uwagi || '')
     } catch (err) {
       console.error('Błąd wczytywania przedmiotu:', err)
       setError('Nie udało się wczytać przedmiotu.')
@@ -121,7 +121,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
 
       // Prepare payload
       let payload = {
-        typ_przedmiotu,
+        typ,
         nominal: nominal.trim(),
         kraj: kraj.trim(),
         rok: rok ? parseInt(rok, 10) : null,
@@ -130,11 +130,11 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         data_zakupu: data_zakupu || null,
         cena_zakupu: cena_zakupu ? parseFloat(cena_zakupu) : null,
         sprzedawca: sprzedawca.trim() || null,
-        notatki: notatki.trim() || null,
+        uwagi: uwagi.trim() || null,
       }
 
       // Conditional fields: banknot-specific
-      if (typ_przedmiotu === 'banknot') {
+      if (typ === 'banknot') {
         payload.miasto_wydania = miasto_wydania.trim() || null
         payload.seria = seria.trim() || null
       } else {
@@ -190,7 +190,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
   }
 
   const resetForm = () => {
-    setTyp_przedmiotu('moneta')
+    setTyp('moneta')
     setNominal('')
     setKraj('')
     setRok('')
@@ -201,7 +201,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
     setData_zakupu('')
     setCena_zakupu('')
     setSprzedawca('')
-    setNotatki('')
+    setUwagi('')
     setFieldErrors({})
   }
 
@@ -239,9 +239,9 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setTyp_przedmiotu('moneta')}
+                  onClick={() => setTyp('moneta')}
                   className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${
-                    typ_przedmiotu === 'moneta'
+                    typ === 'moneta'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
@@ -250,9 +250,9 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setTyp_przedmiotu('banknot')}
+                  onClick={() => setTyp('banknot')}
                   className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${
-                    typ_przedmiotu === 'banknot'
+                    typ === 'banknot'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
@@ -367,7 +367,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
             </div>
 
             {/* Banknot-specific fields */}
-            {typ_przedmiotu === 'banknot' && (
+            {typ === 'banknot' && (
               <>
                 <div>
                   <label htmlFor="miasto_wydania" className="mb-1 block text-sm font-medium text-gray-700">
@@ -445,13 +445,13 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
             </div>
 
             <div>
-              <label htmlFor="notatki" className="mb-1 block text-sm font-medium text-gray-700">
-                Notatki
+              <label htmlFor="uwagi" className="mb-1 block text-sm font-medium text-gray-700">
+                Uwagi
               </label>
               <textarea
-                id="notatki"
-                value={notatki}
-                onChange={(e) => setNotatki(e.target.value)}
+                id="uwagi"
+                value={uwagi}
+                onChange={(e) => setUwagi(e.target.value)}
                 placeholder="Dodatkowe informacje..."
                 rows="3"
                 className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"

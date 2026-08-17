@@ -7,7 +7,7 @@ export default function ItemFilters({ onResults, onLoading }) {
   const [kraj, setKraj] = useState('')
   const [rok, setRok] = useState('')
   const [miasto_wydania, setMiasto_wydania] = useState('')
-  const [typ_przedmiotu, setTyp_przedmiotu] = useState('wszystkie')
+  const [typ, setTyp] = useState('wszystkie')
   const [stan_zachowania, setStanZachowania] = useState('')
 
   // State
@@ -19,6 +19,12 @@ export default function ItemFilters({ onResults, onLoading }) {
   // Load stany_zachowania on mount
   useEffect(() => {
     loadStanyZachowania()
+  }, [])
+
+  // Load full collection on mount (empty filters = all items)
+  useEffect(() => {
+    handleFilter()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadStanyZachowania = async () => {
@@ -63,8 +69,8 @@ export default function ItemFilters({ onResults, onLoading }) {
       if (miasto_wydania.trim()) {
         query = query.ilike('miasto_wydania', `%${miasto_wydania.trim()}%`)
       }
-      if (typ_przedmiotu !== 'wszystkie') {
-        query = query.eq('typ_przedmiotu', typ_przedmiotu)
+      if (typ !== 'wszystkie') {
+        query = query.eq('typ', typ)
       }
       if (stan_zachowania.trim()) {
         query = query.eq('stan_zachowania', stan_zachowania)
@@ -89,7 +95,7 @@ export default function ItemFilters({ onResults, onLoading }) {
     setKraj('')
     setRok('')
     setMiasto_wydania('')
-    setTyp_przedmiotu('wszystkie')
+    setTyp('wszystkie')
     setStanZachowania('')
     setError(null)
     if (onResults) onResults(null)
@@ -187,8 +193,8 @@ export default function ItemFilters({ onResults, onLoading }) {
             </label>
             <select
               id="filter-typ"
-              value={typ_przedmiotu}
-              onChange={(e) => setTyp_przedmiotu(e.target.value)}
+              value={typ}
+              onChange={(e) => setTyp(e.target.value)}
               className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
             >
               <option value="wszystkie">-- Wszystkie --</option>
