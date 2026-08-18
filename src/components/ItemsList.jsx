@@ -4,7 +4,7 @@ import { deleteItem } from '../lib/itemsApi'
 import { supabase } from '../lib/supabase'
 import ItemForm from './ItemForm'
 
-export default function ItemsList({ filteredItems }) {
+export default function ItemsList({ filteredItems, onModeChange }) {
   const [selectedItem, setSelectedItem] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -95,8 +95,8 @@ export default function ItemsList({ filteredItems }) {
     setIsEditing(false)
     setConfirmDelete(false)
     setActionError(null)
+    if (onModeChange) onModeChange(true)
   }
-
   const startEditing = () => {
     setIsEditing(true)
     setActionError(null)
@@ -108,10 +108,14 @@ export default function ItemsList({ filteredItems }) {
   }
 
   const handleSaved = (updatedItem) => {
-    queryClient.invalidateQueries({ queryKey: ['items'] })
-    setSelectedItem(updatedItem)
-    setIsEditing(false)
-  }
+     queryClient.invalidateQueries({ queryKey: ['items'] })
+     backToList()
+   }
+
+  const backToList = () => {
+  setSelectedItem(null)
+  if (onModeChange) onModeChange(false)
+}
 
   if (selectedItem) {
     if (isEditing) {
@@ -128,10 +132,7 @@ export default function ItemsList({ filteredItems }) {
 
     return (
       <div className="mx-auto max-w-md space-y-4 p-4">
-        <button onClick={() => setSelectedItem(null)} className="text-sm font-medium text-blue-600">
-          ← Wróć do listy
-        </button>
-
+       <button onClick={backToList} className="text-sm font-medium text-blue-600">← Wróć do listy</button>
         {/* Awers / rewers: jedna kolumna, jedno pod drugim, duże */}
         {hasMainPhotos && (
           <div className="grid grid-cols-1 gap-2">
