@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import ItemForm from './components/ItemForm'
 import ItemFilters from './components/ItemFilters'
-// import QuickAddForm from './components/QuickAddForm'
 import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
 import { supabase } from './lib/supabase'
@@ -9,12 +8,13 @@ import { supabase } from './lib/supabase'
 function App() {
   const [view, setView] = useState('lista')
   const [filterResults, setFilterResults] = useState(null)
+  const [isDetailView, setIsDetailView] = useState(false)
 
   return (
     <AuthGate>
       <div className="min-h-screen flex flex-col lg:flex-row lg:bg-gray-50">
-        {/* Mobile navigation: horizontal tabs at top */}
-        <div className="lg:hidden flex border-b bg-white">
+        {/* Mobile navigation: sticky horizontal tabs at top */}
+        <div className="lg:hidden sticky top-0 z-10 flex border-b bg-white shadow-sm">
           <button
             onClick={() => setView('lista')}
             className={`flex-1 py-3 font-medium transition-colors ${view === 'lista'
@@ -70,8 +70,11 @@ function App() {
         <div className="flex-1 lg:overflow-auto">
           <div className={view === 'lista' ? 'block' : 'hidden'}>
             <div className="space-y-4 p-4 lg:p-6">
-              <ItemFilters onResults={setFilterResults} />
-              <ItemsList filteredItems={filterResults} />
+              {!isDetailView && <ItemFilters onResults={setFilterResults} />}
+              <ItemsList
+                filteredItems={filterResults}
+                onModeChange={setIsDetailView}
+              />
             </div>
           </div>
           <div className={view === 'dodaj' ? 'block' : 'hidden'}>
