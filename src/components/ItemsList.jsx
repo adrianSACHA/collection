@@ -277,10 +277,10 @@ export default function ItemsList({ filteredItems, onModeChange }) {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-800">
-                        {item.kraj} · {item.nominal}
+                        {item.nominal} {item.rok ? ` · ${item.rok}` : ''}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {item.typ}{item.rok ? ` · ${item.rok}` : ''}
+                        {item.kraj}
                         {item.stan_zachowania_etykieta && ` · ${item.stan_zachowania_etykieta}`}
                       </p>
                     </div>
