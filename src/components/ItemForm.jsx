@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadPhoto } from '../lib/uploadPhoto'
 
-export default function ItemForm({ itemId, onSaved, onCancel }) {
+
+export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
     const isEditMode = !!itemId
 
+
     // Form fields
-    const [typ, setTyp] = useState('moneta')
+    const [typ, setTyp] = useState(fixedType || 'moneta')
     const [nominal, setNominal] = useState('')
     const [kraj, setKraj] = useState('')
     const [rok, setRok] = useState('')
@@ -16,11 +18,14 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
     const [nadruk, setNadruk] = useState('')
     const [kod_drukarni, setKodDrukarni] = useState('')
     const [znak_wodny, setZnakWodny] = useState('')
+    const [naklad, setNaklad] = useState('')
+    const [unikat, setUnikat] = useState(false)
     const [stan_zachowania, setStanZachowania] = useState('')
     const [data_zakupu, setData_zakupu] = useState('')
     const [cena_zakupu, setCena_zakupu] = useState('')
     const [sprzedawca, setSprzedawca] = useState('')
     const [uwagi, setUwagi] = useState('')
+
 
     // Zdjęcia (opcjonalne)
     const [awersFile, setAwersFile] = useState(null)
@@ -30,6 +35,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
     const [photoUploading, setPhotoUploading] = useState(false)
     const [photoError, setPhotoError] = useState(null)
 
+
     // State
     const [stanyZachowaniList, setStanyZachowaniList] = useState([])
     const [loading, setLoading] = useState(false)
@@ -37,9 +43,11 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
     const [success, setSuccess] = useState(false)
     const [fieldErrors, setFieldErrors] = useState({})
 
+
     useEffect(() => {
         loadStanyZachowania()
     }, [])
+
 
     useEffect(() => {
         if (isEditMode && itemId) {
@@ -47,6 +55,14 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
             loadPhotos(itemId)
         }
     }, [isEditMode, itemId])
+
+
+    // Gdy formularz jest otwierany z gotowym typem (zakładka Monety/Banknoty)
+    // i nie jest to edycja istniejącego przedmiotu, wymuszamy ten typ.
+    useEffect(() => {
+        if (fixedType && !isEditMode) setTyp(fixedType)
+    }, [fixedType, isEditMode])
+
 
     const loadStanyZachowania = async () => {
         try {
@@ -61,6 +77,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
             setError('Nie udało się wczytać stanów zachowania.')
         }
     }
+
 
     const loadPhotos = async (targetItemId) => {
         const idToUse = targetItemId || itemId
@@ -88,8 +105,10 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                 .eq('id', itemId)
                 .single()
 
+
             if (err) throw err
             if (!data) throw new Error('Przedmiot nie znaleziony.')
+
 
             setTyp(data.typ || 'moneta')
             setNominal(data.nominal || '')
@@ -101,6 +120,8 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
             setNadruk(data.nadruk || '')
             setKodDrukarni(data.kod_drukarni || '')
             setZnakWodny(data.znak_wodny || '')
+            setNaklad(data.naklad || '')
+            setUnikat(!!data.unikat)
             setStanZachowania(data.stan_zachowania || '')
             setData_zakupu(data.data_zakupu || '')
             setCena_zakupu(data.cena_zakupu ? String(data.cena_zakupu) : '')
@@ -114,10 +135,12 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         }
     }
 
+
     const validateForm = () => {
         const errors = {}
         if (!kraj.trim()) errors.kraj = 'Kraj jest wymagany.'
         if (!nominal.trim()) errors.nominal = 'Nominał jest wymagany.'
+
 
         const rokNum = rok ? parseInt(rok, 10) : null
         const hasRok = rokNum !== null && !isNaN(rokNum)
@@ -126,9 +149,11 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
             errors.date_required = 'Podaj przynajmniej rok lub datę wydania.'
         }
 
+
         setFieldErrors(errors)
         return Object.keys(errors).length === 0
     }
+
 
     const uploadSelectedPhotos = async (targetItemId) => {
         const tasks = []
@@ -136,6 +161,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         if (rewersFile) tasks.push(uploadPhoto(rewersFile, targetItemId, 'rewers'))
         if (znakWodnyFile) tasks.push(uploadPhoto(znakWodnyFile, targetItemId, 'znak_wodny'))
         if (tasks.length === 0) return
+
 
         try {
             setPhotoUploading(true)
@@ -153,15 +179,19 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         }
     }
 
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError(null)
         setSuccess(false)
 
+
         if (!validateForm()) return
+
 
         try {
             setLoading(true)
+
 
             let payload = {
                 typ,
@@ -176,19 +206,25 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                 uwagi: uwagi.trim() || null,
             }
 
+
             if (typ === 'banknot') {
                 payload.miasto_wydania = miasto_wydania.trim() || null
                 payload.seria = seria.trim() || null
                 payload.nadruk = nadruk.trim() || null
                 payload.kod_drukarni = kod_drukarni.trim() || null
                 payload.znak_wodny = znak_wodny.trim() || null
+                payload.naklad = null
+                payload.unikat = unikat
             } else {
                 payload.miasto_wydania = null
                 payload.seria = null
                 payload.nadruk = null
                 payload.kod_drukarni = null
                 payload.znak_wodny = null
+                payload.naklad = naklad.trim() || null
+                payload.unikat = false
             }
+
 
             if (isEditMode) {
                 const { data, error: err } = await supabase
@@ -197,6 +233,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                     .eq('id', itemId)
                     .select()
                     .single()
+
 
                 if (err) throw err
                 setSuccess(true)
@@ -207,13 +244,16 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                 if (userErr) throw userErr
                 if (!userData?.user?.id) throw new Error('Nie jesteś zalogowany.')
 
+
                 payload.user_id = userData.user.id
+
 
                 const { data, error: err } = await supabase
                     .from('items')
                     .insert(payload)
                     .select()
                     .single()
+
 
                 if (err) throw err
                 setSuccess(true)
@@ -235,8 +275,9 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         }
     }
 
+
     const resetForm = () => {
-        setTyp('moneta')
+        setTyp(fixedType || 'moneta')
         setNominal('')
         setKraj('')
         setRok('')
@@ -246,6 +287,8 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         setNadruk('')
         setKodDrukarni('')
         setZnakWodny('')
+        setNaklad('')
+        setUnikat(false)
         setStanZachowania('')
         setData_zakupu('')
         setCena_zakupu('')
@@ -258,12 +301,20 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
         setFieldErrors({})
     }
 
+
     return (
         <form onSubmit={handleSubmit} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
             <div className="mx-auto max-w-md lg:max-w-6xl">
                 <h2 className="mb-6 text-xl font-semibold text-gray-800">
-                    {isEditMode ? 'Edytuj przedmiot' : 'Dodaj przedmiot'}
+                    {isEditMode
+                        ? 'Edytuj przedmiot'
+                        : fixedType === 'banknot'
+                            ? 'Dodaj banknot'
+                            : fixedType === 'moneta'
+                                ? 'Dodaj monetę'
+                                : 'Dodaj przedmiot'}
                 </h2>
+
 
                 {error && (
                     <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -291,30 +342,36 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                     </div>
                 )}
 
+
                 <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:gap-8">
                     {/* Lewa kolumna: pola danych */}
                     <div className="space-y-3">
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Typ *</label>
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setTyp('moneta')}
-                                    className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${typ === 'moneta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    Moneta
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setTyp('banknot')}
-                                    className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${typ === 'banknot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    Banknot
-                                </button>
+                        {/* Przełącznik Typ - chowany, gdy typ jest już wybrany przez zakładkę
+                            i nie jesteśmy w edycji istniejącego przedmiotu innego typu */}
+                        {!fixedType && (
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-gray-700">Typ *</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setTyp('moneta')}
+                                        className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${typ === 'moneta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        Moneta
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTyp('banknot')}
+                                        className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${typ === 'banknot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        Banknot
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
 
                         <div>
                             <label htmlFor="nominal" className="mb-1 block text-sm font-medium text-gray-700">
@@ -335,6 +392,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                             {fieldErrors.nominal && <span className="mt-1 text-xs text-red-600">{fieldErrors.nominal}</span>}
                         </div>
 
+
                         <div>
                             <label htmlFor="kraj" className="mb-1 block text-sm font-medium text-gray-700">
                                 Kraj <span className="text-red-500">*</span>
@@ -353,6 +411,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                             />
                             {fieldErrors.kraj && <span className="mt-1 text-xs text-red-600">{fieldErrors.kraj}</span>}
                         </div>
+
 
                         <div className="flex gap-3">
                             <div className="flex-1">
@@ -387,6 +446,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                             </div>
                         </div>
 
+
                         <div>
                             <label htmlFor="stan_zachowania" className="mb-1 block text-sm font-medium text-gray-700">
                                 Stan zachowania
@@ -403,6 +463,24 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                                 ))}
                             </select>
                         </div>
+
+
+                        {typ === 'moneta' && (
+                            <div>
+                                <label htmlFor="naklad" className="mb-1 block text-sm font-medium text-gray-700">
+                                    Nakład
+                                </label>
+                                <input
+                                    id="naklad"
+                                    type="text"
+                                    value={naklad}
+                                    onChange={(e) => setNaklad(e.target.value)}
+                                    placeholder="np. 1 000 000 szt. lub nieznany"
+                                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                />
+                            </div>
+                        )}
+
 
                         {typ === 'banknot' && (
                             <>
@@ -433,6 +511,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                                     </div>
                                 </div>
 
+
                                 <div>
                                     <label htmlFor="nadruk" className="mb-1 block text-sm font-medium text-gray-700">Nadruk</label>
                                     <input
@@ -444,6 +523,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                                         className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
                                     />
                                 </div>
+
 
                                 <div>
                                     <label htmlFor="kod_drukarni" className="mb-1 block text-sm font-medium text-gray-700">
@@ -459,6 +539,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                                     />
                                 </div>
 
+
                                 <div>
                                     <label htmlFor="znak_wodny" className="mb-1 block text-sm font-medium text-gray-700">
                                         Znak wodny (opis)
@@ -472,8 +553,23 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                                         className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
                                     />
                                 </div>
+
+
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        id="unikat"
+                                        type="checkbox"
+                                        checked={unikat}
+                                        onChange={(e) => setUnikat(e.target.checked)}
+                                        className="h-5 w-5 rounded border-gray-300"
+                                    />
+                                    <label htmlFor="unikat" className="text-sm font-medium text-gray-700">
+                                        Unikat
+                                    </label>
+                                </div>
                             </>
                         )}
+
 
                         <div className="flex gap-3">
                             <div className="flex-1">
@@ -504,6 +600,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                             </div>
                         </div>
 
+
                         <div>
                             <label htmlFor="sprzedawca" className="mb-1 block text-sm font-medium text-gray-700">
                                 Sprzedawca
@@ -518,6 +615,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                             />
                         </div>
 
+
                         <div>
                             <label htmlFor="uwagi" className="mb-1 block text-sm font-medium text-gray-700">Uwagi</label>
                             <textarea
@@ -531,6 +629,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                         </div>
                     </div>
 
+
                     {/* Prawa kolumna: zdjęcia (opcjonalne) */}
                     <div className="lg:pt-0">
                         <div className="rounded-lg border border-gray-200 p-4 lg:sticky lg:top-8">
@@ -538,6 +637,7 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                             <p className="mb-3 text-xs text-gray-500">
                                 Możesz dodać zdjęcie poglądowe - nie jest wymagane do zapisania przedmiotu.
                             </p>
+
 
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker label="Awers" existingUrl={existingPhotos.awers} onChange={setAwersFile} />
@@ -551,10 +651,12 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
                                 )}
                             </div>
 
+
                             {photoUploading && <p className="mt-2 text-xs text-blue-600">Wgrywanie zdjęć...</p>}
                         </div>
                     </div>
                 </div>
+
 
                 <div className="mt-6 flex gap-3">
                     <button
@@ -579,8 +681,10 @@ export default function ItemForm({ itemId, onSaved, onCancel }) {
     )
 }
 
+
 function PhotoPicker({ label, existingUrl, onChange }) {
     const [previewUrl, setPreviewUrl] = useState(null)
+
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0] || null
@@ -588,7 +692,9 @@ function PhotoPicker({ label, existingUrl, onChange }) {
         setPreviewUrl(file ? URL.createObjectURL(file) : null)
     }
 
+
     const displayUrl = previewUrl || existingUrl
+
 
     return (
         <div>

@@ -6,9 +6,25 @@ import AuthGate from './components/AuthGate'
 import { supabase } from './lib/supabase'
 
 function App() {
-  const [view, setView] = useState('lista')
+  const [view, setView] = useState('moneta') // 'moneta' | 'banknot'
+  const [mode, setMode] = useState('lista') // 'lista' | 'dodaj'
   const [filterResults, setFilterResults] = useState(null)
   const [isDetailView, setIsDetailView] = useState(false)
+
+  const switchType = (nextType) => {
+    setView(nextType)
+    setMode('lista')
+    setFilterResults(null)
+    setIsDetailView(false)
+  }
+
+  const goToAdd = () => setMode('dodaj')
+
+  const backToListAfterSave = () => {
+    setMode('lista')
+  }
+
+  const typLabel = view === 'moneta' ? 'monetę' : 'banknot'
 
   return (
     <AuthGate>
@@ -16,22 +32,22 @@ function App() {
         {/* Mobile navigation: sticky horizontal tabs at top */}
         <div className="lg:hidden sticky top-0 z-10 flex border-b bg-white shadow-sm">
           <button
-            onClick={() => setView('lista')}
-            className={`flex-1 py-3 font-medium transition-colors ${view === 'lista'
+            onClick={() => switchType('moneta')}
+            className={`flex-1 py-3 font-medium transition-colors ${view === 'moneta'
               ? 'border-b-2 border-blue-600 text-blue-600'
               : 'text-gray-500 hover:text-gray-700'
               }`}
           >
-            Kolekcja
+            Monety
           </button>
           <button
-            onClick={() => setView('dodaj')}
-            className={`flex-1 py-3 font-medium transition-colors ${view === 'dodaj'
+            onClick={() => switchType('banknot')}
+            className={`flex-1 py-3 font-medium transition-colors ${view === 'banknot'
               ? 'border-b-2 border-blue-600 text-blue-600'
               : 'text-gray-500 hover:text-gray-700'
               }`}
           >
-            Dodaj
+            Banknoty
           </button>
         </div>
 
@@ -39,22 +55,22 @@ function App() {
         <div className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:bg-white lg:shadow-sm">
           <nav className="space-y-1 p-4">
             <button
-              onClick={() => setView('lista')}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${view === 'lista'
+              onClick={() => switchType('moneta')}
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${view === 'moneta'
                 ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
                 : 'text-gray-600 hover:bg-gray-50'
                 }`}
             >
-              Kolekcja
+              Monety
             </button>
             <button
-              onClick={() => setView('dodaj')}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${view === 'dodaj'
+              onClick={() => switchType('banknot')}
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${view === 'banknot'
                 ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
                 : 'text-gray-600 hover:bg-gray-50'
                 }`}
             >
-              Dodaj
+              Banknoty
             </button>
           </nav>
 
@@ -68,18 +84,33 @@ function App() {
 
         {/* Main content area */}
         <div className="flex-1 lg:overflow-auto">
-          <div className={view === 'lista' ? 'block' : 'hidden'}>
+          {mode === 'lista' ? (
             <div className="space-y-4 p-4 lg:p-6">
-              {!isDetailView && <ItemFilters onResults={setFilterResults} />}
+              {!isDetailView && (
+                <>
+                  <ItemFilters fixedType={view} onResults={setFilterResults} />
+                  <div className="mx-auto max-w-md lg:max-w-6xl">
+                    <button
+                      onClick={goToAdd}
+                      className="w-full rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                    >
+                      + Dodaj {typLabel}
+                    </button>
+                  </div>
+                </>
+              )}
               <ItemsList
                 filteredItems={filterResults}
                 onModeChange={setIsDetailView}
               />
             </div>
-          </div>
-          <div className={view === 'dodaj' ? 'block' : 'hidden'}>
-            <ItemForm onSaved={() => setView('lista')} />
-          </div>
+          ) : (
+            <ItemForm
+              fixedType={view}
+              onSaved={backToListAfterSave}
+              onCancel={backToListAfterSave}
+            />
+          )}
         </div>
       </div>
     </AuthGate>

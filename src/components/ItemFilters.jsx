@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function ItemFilters({ onResults, onLoading }) {
+
+export default function ItemFilters({ onResults, onLoading, fixedType }) {
   // Filter fields
   const [nominal, setNominal] = useState('')
   const [kraj, setKraj] = useState('')
   const [rok, setRok] = useState('')
   const [miasto_wydania, setMiasto_wydania] = useState('')
-  const [typ, setTyp] = useState('wszystkie')
+  const [typ, setTyp] = useState(fixedType || 'wszystkie')
   const [stan_zachowania, setStanZachowania] = useState('')
+
 
   // State
   const [stanyZachowaniList, setStanyZachowaniList] = useState([])
@@ -16,23 +18,29 @@ export default function ItemFilters({ onResults, onLoading }) {
   const [error, setError] = useState(null)
   const [isExpanded, setIsExpanded] = useState(false) // Mobile toggle
 
+
   // Load stany_zachowania on mount
   useEffect(() => {
     loadStanyZachowania()
   }, [])
 
-  // Load full collection on mount (empty filters = all items)
+
+  // Jeśli fixedType się zmienia (np. przełączenie zakładki Monety/Banknoty
+  // w App.jsx), wymuszamy typ filtra i przeładowujemy wyniki.
   useEffect(() => {
+    if (fixedType) setTyp(fixedType)
     handleFilter()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fixedType])
+
 
   const loadStanyZachowania = async () => {
     try {
       const { data, error: err } = await supabase
         .from('stany_zachowania')
-        .select('kod, etykieta')
+        .select('kod, etykieta, opis')
         .order('kolejnosc', { ascending: true })
+
 
       if (err) throw err
       setStanyZachowaniList(data || [])
@@ -42,16 +50,39 @@ export default function ItemFilters({ onResults, onLoading }) {
     }
   }
 
+
+  // Dołącza etykietę i opis stanu zachowania do każdego przedmiotu,
+  // po stronie JS - zastępuje dawny JOIN robiony przez widok
+  // items_z_etykietami (usunięty, żeby nie trzymać dwóch źródeł danych
+  // o tych samych przedmiotach).
+  const attachStanyLabels = (items, stanyList) => {
+    const stanyMap = {}
+    for (const stan of stanyList) stanyMap[stan.kod] = stan
+
+    return items.map((item) => {
+      const stanInfo = item.stan_zachowania ? stanyMap[item.stan_zachowania] : null
+      return {
+        ...item,
+        stan_zachowania_etykieta: stanInfo?.etykieta || null,
+        stan_zachowania_opis: stanInfo?.opis || null,
+      }
+    })
+  }
+
   const handleFilter = async () => {
     try {
       setLoading(true)
       setError(null)
       if (onLoading) onLoading(true)
 
+
       let query = supabase
-        .from('items_z_etykietami')
+        .from('items')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
+
+
+      const effectiveTyp = fixedType || typ
 
       // Apply filters (all optional, AND logic)
       if (nominal.trim()) {
@@ -69,17 +100,28 @@ export default function ItemFilters({ onResults, onLoading }) {
       if (miasto_wydania.trim()) {
         query = query.ilike('miasto_wydania', `%${miasto_wydania.trim()}%`)
       }
-      if (typ !== 'wszystkie') {
-        query = query.eq('typ', typ)
+      if (effectiveTyp !== 'wszystkie') {
+        query = query.eq('typ', effectiveTyp)
       }
       if (stan_zachowania.trim()) {
         query = query.eq('stan_zachowania', stan_zachowania)
       }
 
+
       const { data, error: err } = await query
 
+
       if (err) throw err
-      if (onResults) onResults(data || [])
+
+      // Jeśli lista stanów zachowania jeszcze się nie wczytała (rzadki
+      // wyścig przy pierwszym renderze), dociągamy ją tutaj, żeby
+      // etykiety zawsze się poprawnie dołączyły.
+      const stanyList = stanyZachowaniList.length
+        ? stanyZachowaniList
+        : (await supabase.from('stany_zachowania').select('kod, etykieta, opis')).data || []
+
+      const withLabels = attachStanyLabels(data || [], stanyList)
+      if (onResults) onResults(withLabels)
     } catch (err) {
       console.error('Błąd filtrowania:', err)
       setError('Nie udało się wczytać wyników.')
@@ -90,27 +132,31 @@ export default function ItemFilters({ onResults, onLoading }) {
     }
   }
 
+
   const handleClear = () => {
     setNominal('')
     setKraj('')
     setRok('')
     setMiasto_wydania('')
-    setTyp('wszystkie')
+    setTyp(fixedType || 'wszystkie')
     setStanZachowania('')
     setError(null)
-    if (onResults) onResults(null)
+    handleFilter()
   }
+
 
   return (
     <div className="w-full rounded-lg border border-gray-200 bg-white p-4 lg:p-6">
       {/* Header */}
       <h3 className="mb-4 text-lg font-semibold text-gray-800">Filtry</h3>
 
+
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}
+
 
       {/* Always visible on mobile: Nominał & Kraj */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -129,6 +175,7 @@ export default function ItemFilters({ onResults, onLoading }) {
           />
         </div>
 
+
         {/* Kraj */}
         <div>
           <label htmlFor="filter-kraj" className="mb-1 block text-sm font-medium text-gray-700">
@@ -145,6 +192,7 @@ export default function ItemFilters({ onResults, onLoading }) {
         </div>
       </div>
 
+
       {/* Mobile toggle for additional filters */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -153,9 +201,10 @@ export default function ItemFilters({ onResults, onLoading }) {
         {isExpanded ? '▼ Schowaj pozostałe' : '▶ Rozwiń pozostałe filtry'}
       </button>
 
+
       {/* Additional filters - hidden on mobile unless expanded, always visible on desktop */}
       <div className={`${isExpanded ? 'block' : 'hidden'} lg:block mt-4`}>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid gap-4 sm:grid-cols-2 ${fixedType ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}`}>
           {/* Rok */}
           <div>
             <label htmlFor="filter-rok" className="mb-1 block text-sm font-medium text-gray-700">
@@ -170,6 +219,7 @@ export default function ItemFilters({ onResults, onLoading }) {
               className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
             />
           </div>
+
 
           {/* Miasto wydania */}
           <div>
@@ -186,22 +236,26 @@ export default function ItemFilters({ onResults, onLoading }) {
             />
           </div>
 
-          {/* Typ przedmiotu */}
-          <div>
-            <label htmlFor="filter-typ" className="mb-1 block text-sm font-medium text-gray-700">
-              Typ
-            </label>
-            <select
-              id="filter-typ"
-              value={typ}
-              onChange={(e) => setTyp(e.target.value)}
-              className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            >
-              <option value="wszystkie">-- Wszystkie --</option>
-              <option value="moneta">Moneta</option>
-              <option value="banknot">Banknot</option>
-            </select>
-          </div>
+
+          {/* Typ przedmiotu - chowany, gdy typ jest już wybrany przez zakładkę */}
+          {!fixedType && (
+            <div>
+              <label htmlFor="filter-typ" className="mb-1 block text-sm font-medium text-gray-700">
+                Typ
+              </label>
+              <select
+                id="filter-typ"
+                value={typ}
+                onChange={(e) => setTyp(e.target.value)}
+                className="w-full min-h-[40px] rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+              >
+                <option value="wszystkie">-- Wszystkie --</option>
+                <option value="moneta">Moneta</option>
+                <option value="banknot">Banknot</option>
+              </select>
+            </div>
+          )}
+
 
           {/* Stan zachowania */}
           <div>
@@ -224,6 +278,7 @@ export default function ItemFilters({ onResults, onLoading }) {
           </div>
         </div>
       </div>
+
 
       {/* Action buttons */}
       <div className="mt-4 flex gap-3">

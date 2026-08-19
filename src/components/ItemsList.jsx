@@ -10,9 +10,7 @@ export default function ItemsList({ filteredItems, onModeChange }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [actionError, setActionError] = useState(null)
 
-  // Miniatury awersu dla listy: { item_id: url }
   const [thumbnails, setThumbnails] = useState({})
-  // Zdjęcia wybranego przedmiotu (widok szczegółów): { typ: url }
   const [selectedPhotos, setSelectedPhotos] = useState({})
 
   const queryClient = useQueryClient()
@@ -25,10 +23,6 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     0
   )
 
-  // Wczytaj miniatury awersu dla widocznych przedmiotów na liście.
-  // Zależność to stabilny string (ID połączone przecinkiem), nie referencja
-  // tablicy `items` - inaczej `items = filteredItems || []` tworzy nową
-  // tablicę przy każdym renderze i powoduje nieskończoną pętlę renderowania.
   useEffect(() => {
     if (!items.length) {
       setThumbnails({})
@@ -57,7 +51,6 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.map((i) => i.id).join(',')])
 
-  // Wczytaj zdjęcia wybranego przedmiotu (widok szczegółów, nie edycja).
   useEffect(() => {
     if (!selectedItem || isEditing) return
 
@@ -86,6 +79,7 @@ export default function ItemsList({ filteredItems, onModeChange }) {
       queryClient.invalidateQueries({ queryKey: ['items'] })
       setSelectedItem(null)
       setConfirmDelete(false)
+      if (onModeChange) onModeChange(false)
     },
     onError: (err) => setActionError(err.message || 'Nie udało się usunąć przedmiotu.'),
   })
@@ -97,6 +91,7 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     setActionError(null)
     if (onModeChange) onModeChange(true)
   }
+
   const startEditing = () => {
     setIsEditing(true)
     setActionError(null)
@@ -107,15 +102,17 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     setActionError(null)
   }
 
-  const handleSaved = (updatedItem) => {
-     queryClient.invalidateQueries({ queryKey: ['items'] })
-     backToList()
-   }
-
   const backToList = () => {
-  setSelectedItem(null)
-  if (onModeChange) onModeChange(false)
-}
+    setSelectedItem(null)
+    setIsEditing(false)
+    if (onModeChange) onModeChange(false)
+  }
+
+  const handleSaved = (updatedItem) => {
+    queryClient.invalidateQueries({ queryKey: ['items'] })
+    setSelectedItem(updatedItem)
+    setIsEditing(false)
+  }
 
   if (selectedItem) {
     if (isEditing) {
@@ -129,11 +126,15 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     }
 
     const hasMainPhotos = selectedPhotos.awers || selectedPhotos.rewers
+    const isCoin = selectedItem.typ === 'moneta'
+    const isBanknote = selectedItem.typ === 'banknot'
 
     return (
       <div className="mx-auto max-w-md space-y-4 p-4">
-       <button onClick={backToList} className="text-sm font-medium text-blue-600">← Wróć do listy</button>
-        {/* Awers / rewers: jedna kolumna, jedno pod drugim, duże */}
+        <button onClick={backToList} className="text-sm font-medium text-blue-600">
+          ← Wróć do listy
+        </button>
+
         {hasMainPhotos && (
           <div className="grid grid-cols-1 gap-2">
             {selectedPhotos.awers && (
@@ -151,7 +152,6 @@ export default function ItemsList({ filteredItems, onModeChange }) {
           </div>
         )}
 
-        {/* Znak wodny: mała miniatura, osobno od awers/rewers */}
         {selectedPhotos.znak_wodny && (
           <div className="flex items-center gap-2">
             <img
@@ -173,13 +173,14 @@ export default function ItemsList({ filteredItems, onModeChange }) {
           <DetailRow label="Seria" value={selectedItem.seria} />
           <DetailRow label="Nadruk" value={selectedItem.nadruk} />
           <DetailRow label="Kod drukarni" value={selectedItem.kod_drukarni} />
+          {isCoin && <DetailRow label="Nakład" value={selectedItem.naklad} />}
           <DetailRow label="Znak wodny (opis)" value={selectedItem.znak_wodny} />
           <DetailRow
             label="Stan zachowania"
             value={selectedItem.stan_zachowania_etykieta || selectedItem.stan_zachowania}
           />
           <DetailRow label="Wariant" value={selectedItem.wariant} />
-          <DetailRow label="Unikat" value={selectedItem.unikat ? 'Tak' : 'Nie'} />
+          {isBanknote && <DetailRow label="Unikat" value={selectedItem.unikat ? 'Tak' : 'Nie'} />}
           <DetailRow
             label="Cena zakupu"
             value={selectedItem.cena_zakupu ? `${selectedItem.cena_zakupu} PLN` : null}
@@ -191,7 +192,6 @@ export default function ItemsList({ filteredItems, onModeChange }) {
             value={selectedItem.wartosc_aktualna ? `${selectedItem.wartosc_aktualna} PLN` : null}
           />
           <DetailRow label="Lokalizacja" value={selectedItem.lokalizacja} />
-          <DetailRow label="Status" value={selectedItem.status} />
           <DetailRow label="Uwagi" value={selectedItem.uwagi} />
         </div>
 
