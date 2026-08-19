@@ -23,7 +23,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
     const [stan_zachowania, setStanZachowania] = useState('')
     const [data_zakupu, setData_zakupu] = useState('')
     const [cena_zakupu, setCena_zakupu] = useState('')
-    const [sprzedawca, setSprzedawca] = useState('')
     const [uwagi, setUwagi] = useState('')
 
 
@@ -125,7 +124,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
             setStanZachowania(data.stan_zachowania || '')
             setData_zakupu(data.data_zakupu || '')
             setCena_zakupu(data.cena_zakupu ? String(data.cena_zakupu) : '')
-            setSprzedawca(data.sprzedawca || '')
             setUwagi(data.uwagi || '')
         } catch (err) {
             console.error('Błąd wczytywania przedmiotu:', err)
@@ -202,7 +200,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                 stan_zachowania: stan_zachowania || null,
                 data_zakupu: data_zakupu || null,
                 cena_zakupu: cena_zakupu ? parseFloat(cena_zakupu) : null,
-                sprzedawca: sprzedawca.trim() || null,
                 uwagi: uwagi.trim() || null,
             }
 
@@ -292,7 +289,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
         setStanZachowania('')
         setData_zakupu('')
         setCena_zakupu('')
-        setSprzedawca('')
         setUwagi('')
         setAwersFile(null)
         setRewersFile(null)
@@ -413,6 +409,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                         </div>
 
 
+                        {/* Rok + Data wydania, a dla monet dodatkowo Nakład w tym samym rzędzie */}
                         <div className="flex gap-3">
                             <div className="flex-1">
                                 <label htmlFor="rok" className="mb-1 block text-sm font-medium text-gray-700">Rok</label>
@@ -444,6 +441,21 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                 />
                                 <span className="mt-1 text-xs text-gray-500">Format: DD.MM.YYYY</span>
                             </div>
+                            {typ === 'moneta' && (
+                                <div className="flex-1">
+                                    <label htmlFor="naklad" className="mb-1 block text-sm font-medium text-gray-700">
+                                        Nakład
+                                    </label>
+                                    <input
+                                        id="naklad"
+                                        type="text"
+                                        value={naklad}
+                                        onChange={(e) => setNaklad(e.target.value)}
+                                        placeholder="np. 1 mln szt."
+                                        className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                    />
+                                </div>
+                            )}
                         </div>
 
 
@@ -463,23 +475,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                 ))}
                             </select>
                         </div>
-
-
-                        {typ === 'moneta' && (
-                            <div>
-                                <label htmlFor="naklad" className="mb-1 block text-sm font-medium text-gray-700">
-                                    Nakład
-                                </label>
-                                <input
-                                    id="naklad"
-                                    type="text"
-                                    value={naklad}
-                                    onChange={(e) => setNaklad(e.target.value)}
-                                    placeholder="np. 1 000 000 szt. lub nieznany"
-                                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
-                                />
-                            </div>
-                        )}
 
 
                         {typ === 'banknot' && (
@@ -598,21 +593,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                     className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
                                 />
                             </div>
-                        </div>
-
-
-                        <div>
-                            <label htmlFor="sprzedawca" className="mb-1 block text-sm font-medium text-gray-700">
-                                Sprzedawca
-                            </label>
-                            <input
-                                id="sprzedawca"
-                                type="text"
-                                value={sprzedawca}
-                                onChange={(e) => setSprzedawca(e.target.value)}
-                                placeholder="np. allegro, numizmatyk"
-                                className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
-                            />
                         </div>
 
 

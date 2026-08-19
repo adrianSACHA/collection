@@ -168,12 +168,12 @@ export default function ItemsList({ filteredItems, onModeChange }) {
           <DetailRow label="Kraj" value={selectedItem.kraj} />
           <DetailRow label="Nominał" value={selectedItem.nominal} />
           <DetailRow label="Rok" value={selectedItem.rok} />
+          {isCoin && <DetailRow label="Nakład" value={selectedItem.naklad} />}
           <DetailRow label="Data wydania" value={selectedItem.data_wydania} />
           <DetailRow label="Miasto wydania" value={selectedItem.miasto_wydania} />
           <DetailRow label="Seria" value={selectedItem.seria} />
           <DetailRow label="Nadruk" value={selectedItem.nadruk} />
           <DetailRow label="Kod drukarni" value={selectedItem.kod_drukarni} />
-          {isCoin && <DetailRow label="Nakład" value={selectedItem.naklad} />}
           <DetailRow label="Znak wodny (opis)" value={selectedItem.znak_wodny} />
           <DetailRow
             label="Stan zachowania"
@@ -186,7 +186,6 @@ export default function ItemsList({ filteredItems, onModeChange }) {
             value={selectedItem.cena_zakupu ? `${selectedItem.cena_zakupu} PLN` : null}
           />
           <DetailRow label="Data zakupu" value={selectedItem.data_zakupu} />
-          <DetailRow label="Sprzedawca" value={selectedItem.sprzedawca} />
           <DetailRow
             label="Wartość aktualna"
             value={selectedItem.wartosc_aktualna ? `${selectedItem.wartosc_aktualna} PLN` : null}
@@ -261,40 +260,44 @@ export default function ItemsList({ filteredItems, onModeChange }) {
             )}
 
             <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 overflow-hidden bg-white">
-              {items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => openItem(item)}
-                  className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-                >
-                  <div className="flex items-center gap-3">
-                    {thumbnails[item.id] && (
-                      <img
-                        src={thumbnails[item.id]}
-                        alt=""
-                        className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-800">
-                        {item.nominal} {item.rok ? ` · ${item.rok}` : ''}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {item.kraj}
-                        {item.stan_zachowania_etykieta && ` · ${item.stan_zachowania_etykieta}`}
-                      </p>
-                    </div>
-                    <div className="ml-4 text-right flex-shrink-0">
-                      {item.cena_zakupu && (
-                        <p className="text-sm font-medium text-gray-700">{item.cena_zakupu} PLN</p>
+              {items.map((item) => {
+                const isCoin = item.typ === 'moneta'
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => openItem(item)}
+                    className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+                  >
+                    <div className="flex items-center gap-3">
+                      {thumbnails[item.id] && (
+                        <img
+                          src={thumbnails[item.id]}
+                          alt=""
+                          className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain"
+                        />
                       )}
-                      {item.wartosc_aktualna && (
-                        <p className="text-xs text-gray-500">Obecna: {item.wartosc_aktualna} PLN</p>
-                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-800">
+                          {item.nominal}
+                          {item.rok ? ` · ${item.rok}` : ''}
+                          {isCoin && item.naklad ? ` · nakład: ${item.naklad}` : ''}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {item.kraj}
+                        </p>
+                      </div>
+                      <div className="ml-4 text-right flex-shrink-0">
+                        {item.cena_zakupu && (
+                          <p className="text-sm font-medium text-gray-700">{item.cena_zakupu} PLN</p>
+                        )}
+                        {item.wartosc_aktualna && (
+                          <p className="text-xs text-gray-500">Obecna: {item.wartosc_aktualna} PLN</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
