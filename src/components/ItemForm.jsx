@@ -616,6 +616,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             <h3 className="mb-2 text-sm font-semibold text-gray-700">Zdjęcia (opcjonalne)</h3>
                             <p className="mb-3 text-xs text-gray-500">
                                 Możesz dodać zdjęcie poglądowe - nie jest wymagane do zapisania przedmiotu.
+                                Na telefonie przycisk otworzy od razu aparat.
                             </p>
 
 
@@ -686,7 +687,13 @@ function PhotoPicker({ label, existingUrl, onChange }) {
                     className="mb-2 h-32 w-full rounded-lg border border-gray-200 object-contain"
                 />
             )}
-            <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm" />
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="w-full text-sm"
+            />
         </div>
     )
 }

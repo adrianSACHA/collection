@@ -5,14 +5,23 @@ import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
 import { supabase } from './lib/supabase'
 
+const VIEW_STORAGE_KEY = 'kolekcja_widok_typ'
+
+function getInitialView() {
+  if (typeof window === 'undefined') return 'moneta'
+  const saved = window.localStorage.getItem(VIEW_STORAGE_KEY)
+  return saved === 'moneta' || saved === 'banknot' ? saved : 'moneta'
+}
+
 function App() {
-  const [view, setView] = useState('moneta') // 'moneta' | 'banknot'
+  const [view, setView] = useState(getInitialView) // 'moneta' | 'banknot'
   const [mode, setMode] = useState('lista') // 'lista' | 'dodaj'
   const [filterResults, setFilterResults] = useState(null)
   const [isDetailView, setIsDetailView] = useState(false)
 
   const switchType = (nextType) => {
     setView(nextType)
+    window.localStorage.setItem(VIEW_STORAGE_KEY, nextType)
     setMode('lista')
     setFilterResults(null)
     setIsDetailView(false)
