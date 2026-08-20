@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { compressImage } from './compressImage'
 
+
 /**
  * Wgrywa zdjęcie przedmiotu do Supabase Storage (bucket "photos")
  * i zapisuje odpowiadający wpis w tabeli "item_photos".
@@ -9,7 +10,7 @@ import { compressImage } from './compressImage'
  *
  * @param {File} file - plik zdjęcia (z inputa/kamery)
  * @param {string} itemId - uuid przedmiotu, do którego należy zdjęcie
- * @param {'awers' | 'rewers'} typ - strona/typ zdjęcia
+ * @param {'awers' | 'rewers' | 'znak_wodny'} typ - strona/typ zdjęcia
  * @returns {Promise<{ path: string, publicUrl: string }>}
  */
 export async function uploadPhoto(file, itemId, typ) {
@@ -17,10 +18,13 @@ export async function uploadPhoto(file, itemId, typ) {
     throw new Error('uploadPhoto: brak wymaganych parametrów (file, itemId, typ)')
   }
 
+
   const compressedFile = await compressImage(file)
+
 
   const fileName = `${typ}.jpg`
   const storagePath = `${itemId}/${fileName}`
+
 
   const { error: uploadError } = await supabase.storage
     .from('photos')
@@ -30,15 +34,19 @@ export async function uploadPhoto(file, itemId, typ) {
       contentType: 'image/jpeg',
     })
 
+
   if (uploadError) {
     throw new Error(`Błąd uploadu zdjęcia: ${uploadError.message}`)
   }
+
 
   const { data: urlData } = supabase.storage
     .from('photos')
     .getPublicUrl(storagePath)
 
+
   const publicUrl = urlData.publicUrl
+
 
   const { data: existing, error: selectError } = await supabase
     .from('item_photos')
@@ -47,15 +55,18 @@ export async function uploadPhoto(file, itemId, typ) {
     .eq('typ', typ)
     .maybeSingle()
 
+
   if (selectError) {
     throw new Error(`Błąd sprawdzania istniejącego zdjęcia: ${selectError.message}`)
   }
+
 
   if (existing) {
     const { error: updateError } = await supabase
       .from('item_photos')
       .update({ url: publicUrl })
       .eq('id', existing.id)
+
 
     if (updateError) {
       throw new Error(`Błąd aktualizacji wpisu zdjęcia: ${updateError.message}`)
@@ -65,16 +76,61 @@ export async function uploadPhoto(file, itemId, typ) {
       .from('item_photos')
       .insert({ item_id: itemId, typ, url: publicUrl })
 
+
     if (insertError) {
       throw new Error(`Błąd zapisu wpisu zdjęcia: ${insertError.message}`)
     }
   }
+
 
   return {
     path: storagePath,
     publicUrl,
   }
 }
+
+
+/**
+ * Usuwa zdjęcie przedmiotu: fizyczny plik z Supabase Storage (bucket
+ * "photos") oraz odpowiadający wpis w tabeli "item_photos".
+ * Ścieżka pliku jest odtwarzana z tego samego wzorca co przy uploadzie
+ * (`${itemId}/${typ}.jpg`), więc nie trzeba jej przekazywać z zewnątrz.
+ *
+ * @param {string} itemId - uuid przedmiotu, do którego należy zdjęcie
+ * @param {'awers' | 'rewers' | 'znak_wodny'} typ - strona/typ zdjęcia
+ * @returns {Promise<void>}
+ */
+export async function deletePhoto(itemId, typ) {
+  if (!itemId || !typ) {
+    throw new Error('deletePhoto: brak wymaganych parametrów (itemId, typ)')
+  }
+
+
+  const storagePath = `${itemId}/${typ}.jpg`
+
+
+  const { error: storageError } = await supabase.storage
+    .from('photos')
+    .remove([storagePath])
+
+
+  if (storageError) {
+    throw new Error(`Błąd usuwania pliku ze storage: ${storageError.message}`)
+  }
+
+
+  const { error: deleteError } = await supabase
+    .from('item_photos')
+    .delete()
+    .eq('item_id', itemId)
+    .eq('typ', typ)
+
+
+  if (deleteError) {
+    throw new Error(`Błąd usuwania wpisu zdjęcia: ${deleteError.message}`)
+  }
+}
+
 
 /**
  * Wgrywa oba zdjęcia (awers i rewers) na raz.
@@ -88,6 +144,7 @@ export async function uploadCoinPhotos(photos, itemId) {
     uploadPhoto(photos.awers.file, itemId, 'awers'),
     uploadPhoto(photos.rewers.file, itemId, 'rewers'),
   ])
+
 
   return { awers: awersResult, rewers: rewersResult }
 }

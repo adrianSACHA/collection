@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { uploadPhoto } from '../lib/uploadPhoto'
+import { uploadPhoto, deletePhoto } from '../lib/uploadPhoto'
 
 
 export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
@@ -33,6 +33,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
     const [existingPhotos, setExistingPhotos] = useState({})
     const [photoUploading, setPhotoUploading] = useState(false)
     const [photoError, setPhotoError] = useState(null)
+    const [photoDeleting, setPhotoDeleting] = useState(null) // typ aktualnie usuwanego zdjęcia
 
 
     // State
@@ -174,6 +175,28 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
             setPhotoError('Dane zapisane, ale nie udało się wgrać zdjęć: ' + err.message)
         } finally {
             setPhotoUploading(false)
+        }
+    }
+
+
+    // Usuwa już zapisane zdjęcie: fizyczny plik z Supabase Storage oraz
+    // wpis w item_photos, przy edycji istniejącego przedmiotu.
+    const deleteExistingPhoto = async (photoTyp) => {
+        if (!itemId) return
+        try {
+            setPhotoDeleting(photoTyp)
+            setPhotoError(null)
+            await deletePhoto(itemId, photoTyp)
+            setExistingPhotos((prev) => {
+                const next = { ...prev }
+                delete next[photoTyp]
+                return next
+            })
+        } catch (err) {
+            console.error('Błąd usuwania zdjęcia:', err)
+            setPhotoError('Nie udało się usunąć zdjęcia: ' + err.message)
+        } finally {
+            setPhotoDeleting(null)
         }
     }
 
@@ -621,13 +644,27 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
 
 
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                                <PhotoPicker label="Awers" existingUrl={existingPhotos.awers} onChange={setAwersFile} />
-                                <PhotoPicker label="Rewers" existingUrl={existingPhotos.rewers} onChange={setRewersFile} />
+                                <PhotoPicker
+                                    label="Awers"
+                                    existingUrl={existingPhotos.awers}
+                                    onChange={setAwersFile}
+                                    onRemoveExisting={isEditMode ? () => deleteExistingPhoto('awers') : null}
+                                    removing={photoDeleting === 'awers'}
+                                />
+                                <PhotoPicker
+                                    label="Rewers"
+                                    existingUrl={existingPhotos.rewers}
+                                    onChange={setRewersFile}
+                                    onRemoveExisting={isEditMode ? () => deleteExistingPhoto('rewers') : null}
+                                    removing={photoDeleting === 'rewers'}
+                                />
                                 {typ === 'banknot' && (
                                     <PhotoPicker
                                         label="Znak wodny"
                                         existingUrl={existingPhotos.znak_wodny}
                                         onChange={setZnakWodnyFile}
+                                        onRemoveExisting={isEditMode ? () => deleteExistingPhoto('znak_wodny') : null}
+                                        removing={photoDeleting === 'znak_wodny'}
                                     />
                                 )}
                             </div>
@@ -663,29 +700,65 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
 }
 
 
-function PhotoPicker({ label, existingUrl, onChange }) {
+function PhotoPicker({ label, existingUrl, onChange, onRemoveExisting, removing }) {
     const [previewUrl, setPreviewUrl] = useState(null)
+    const [selectedFile, setSelectedFile] = useState(null)
 
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0] || null
+        setSelectedFile(file)
         onChange(file)
         setPreviewUrl(file ? URL.createObjectURL(file) : null)
     }
 
 
+    // Usuwa dopiero co wybrany (jeszcze niewgrany) plik - czyści podgląd
+    // i input, tak żeby dało się wybrać nowy plik jeszcze raz.
+    const clearSelectedFile = () => {
+        setSelectedFile(null)
+        onChange(null)
+        setPreviewUrl(null)
+    }
+
+
     const displayUrl = previewUrl || existingUrl
+    const showRemoveSelected = !!previewUrl
+    const showRemoveExisting = !previewUrl && !!existingUrl && !!onRemoveExisting
 
 
     return (
         <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
             {displayUrl && (
-                <img
-                    src={displayUrl}
-                    alt={label}
-                    className="mb-2 h-32 w-full rounded-lg border border-gray-200 object-contain"
-                />
+                <div className="relative mb-2">
+                    <img
+                        src={displayUrl}
+                        alt={label}
+                        className="h-32 w-full rounded-lg border border-gray-200 object-contain"
+                    />
+                    {showRemoveSelected && (
+                        <button
+                            type="button"
+                            onClick={clearSelectedFile}
+                            aria-label={`Usuń wybrane zdjęcie: ${label}`}
+                            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+                        >
+                            ✕
+                        </button>
+                    )}
+                    {showRemoveExisting && (
+                        <button
+                            type="button"
+                            onClick={onRemoveExisting}
+                            disabled={removing}
+                            aria-label={`Usuń zapisane zdjęcie: ${label}`}
+                            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700 disabled:bg-gray-400"
+                        >
+                            {removing ? '...' : '✕'}
+                        </button>
+                    )}
+                </div>
             )}
             <input
                 type="file"
