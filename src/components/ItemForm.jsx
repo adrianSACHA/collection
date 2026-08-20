@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadPhoto, deletePhoto } from '../lib/uploadPhoto'
 
@@ -34,14 +34,19 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
     const [photoUploading, setPhotoUploading] = useState(false)
     const [photoError, setPhotoError] = useState(null)
     const [photoDeleting, setPhotoDeleting] = useState(null) // typ aktualnie usuwanego zdjęcia
+    const [photoResetKey, setPhotoResetKey] = useState(0) // wymusza remount PhotoPicker po "Dodaj kolejny"
 
 
     // State
     const [stanyZachowaniList, setStanyZachowaniList] = useState([])
     const [loading, setLoading] = useState(false)
+    const [savingMode, setSavingMode] = useState(null) // 'default' | 'addAnother'
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(false)
     const [fieldErrors, setFieldErrors] = useState({})
+
+
+    const nominalInputRef = useRef(null)
 
 
     useEffect(() => {
@@ -201,7 +206,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
     }
 
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e, mode = 'default') => {
         e.preventDefault()
         setError(null)
         setSuccess(false)
@@ -212,6 +217,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
 
         try {
             setLoading(true)
+            setSavingMode(mode)
 
 
             let payload = {
@@ -278,8 +284,18 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                 if (err) throw err
                 setSuccess(true)
                 await uploadSelectedPhotos(data.id)
-                resetForm()
-                if (onSaved) onSaved(data)
+
+
+                if (mode === 'addAnother') {
+                    resetForm({ keepType: true })
+                    // Chowamy komunikat sukcesu po chwili, żeby nie zaśmiecał
+                    // kolejnego wpisu, i przenosimy focus na Nominał.
+                    setTimeout(() => setSuccess(false), 2000)
+                    nominalInputRef.current?.focus()
+                } else {
+                    resetForm()
+                    if (onSaved) onSaved(data)
+                }
             }
         } catch (err) {
             console.error('Błąd zapisywania przedmiotu:', err)
@@ -292,14 +308,18 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
             setError(errorMsg)
         } finally {
             setLoading(false)
+            setSavingMode(null)
         }
     }
 
 
-    const resetForm = () => {
-        setTyp(fixedType || 'moneta')
+    const resetForm = ({ keepType = false } = {}) => {
+        setTyp(keepType ? typ : fixedType || 'moneta')
         setNominal('')
-        setKraj('')
+        // Kraj zostaje - przy seryjnym wprowadzaniu partii z jednego kraju
+        // to najczęściej powtarzana wartość, więc wygodniej jej nie czyścić
+        // przy "Dodaj kolejny".
+        if (!keepType) setKraj('')
         setRok('')
         setData_wydania('')
         setMiasto_wydania('')
@@ -318,11 +338,12 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
         setZnakWodnyFile(null)
         setExistingPhotos({})
         setFieldErrors({})
+        setPhotoResetKey((k) => k + 1)
     }
 
 
     return (
-        <form onSubmit={handleSubmit} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
+        <form onSubmit={(e) => handleSubmit(e, 'default')} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
             <div className="mx-auto max-w-md lg:max-w-6xl">
                 <h2 className="mb-6 text-xl font-semibold text-gray-800">
                     {isEditMode
@@ -397,6 +418,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                 Nominał <span className="text-red-500">*</span>
                             </label>
                             <input
+                                ref={nominalInputRef}
                                 id="nominal"
                                 type="text"
                                 value={nominal}
@@ -643,7 +665,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             </p>
 
 
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                            <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker
                                     label="Awers"
                                     existingUrl={existingPhotos.awers}
@@ -676,14 +698,32 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                 </div>
 
 
-                <div className="mt-6 flex gap-3">
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
                         type="submit"
                         disabled={loading}
                         className="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-300"
                     >
-                        {loading ? 'Zapisywanie...' : isEditMode ? 'Zaktualizuj' : 'Dodaj'}
+                        {loading && savingMode === 'default'
+                            ? 'Zapisywanie...'
+                            : isEditMode
+                                ? 'Zaktualizuj'
+                                : 'Dodaj'}
                     </button>
+
+
+                    {!isEditMode && (
+                        <button
+                            type="button"
+                            onClick={(e) => handleSubmit(e, 'addAnother')}
+                            disabled={loading}
+                            className="flex-1 rounded-lg bg-green-600 py-3 font-medium text-white transition-colors hover:bg-green-700 disabled:bg-gray-300"
+                        >
+                            {loading && savingMode === 'addAnother' ? 'Zapisywanie...' : 'Zapisz i dodaj kolejny'}
+                        </button>
+                    )}
+
+
                     {onCancel && (
                         <button
                             type="button"
