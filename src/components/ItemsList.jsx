@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteItem } from '../lib/itemsApi'
 import { supabase } from '../lib/supabase'
 import ItemForm from './ItemForm'
 
-export default function ItemsList({ filteredItems, onModeChange }) {
+export default function ItemsList({
+  filteredItems,
+  onModeChange,
+  pagination,
+  onLoadMore,
+}) {
   const [selectedItem, setSelectedItem] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [actionError, setActionError] = useState(null)
-
   const [thumbnails, setThumbnails] = useState({})
   const [selectedPhotos, setSelectedPhotos] = useState({})
 
@@ -19,7 +23,8 @@ export default function ItemsList({ filteredItems, onModeChange }) {
   const totalCount = items.length
 
   const totalValue = items.reduce(
-    (sum, item) => sum + (item.wartosc_aktualna || item.cena_zakupu || 0),
+    (sum, item) =>
+      sum + (item.wartosc_aktualna || item.cena_zakupu || 0),
     0
   )
 
@@ -30,7 +35,8 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     }
 
     async function loadThumbnails() {
-      const ids = items.map((i) => i.id)
+      const ids = items.map((item) => item.id)
+
       const { data, error } = await supabase
         .from('item_photos')
         .select('item_id, url')
@@ -43,13 +49,16 @@ export default function ItemsList({ filteredItems, onModeChange }) {
       }
 
       const map = {}
-      for (const row of data || []) map[row.item_id] = row.url
+
+      for (const row of data || []) {
+        map[row.item_id] = row.url
+      }
+
       setThumbnails(map)
     }
 
     loadThumbnails()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.map((i) => i.id).join(',')])
+  }, [items.map((item) => item.id).join(',')])
 
   useEffect(() => {
     if (!selectedItem || isEditing) return
@@ -61,12 +70,19 @@ export default function ItemsList({ filteredItems, onModeChange }) {
         .eq('item_id', selectedItem.id)
 
       if (error) {
-        console.error('Błąd wczytywania zdjęć przedmiotu:', error)
+        console.error(
+          'Błąd wczytywania zdjęć przedmiotu:',
+          error
+        )
         return
       }
 
       const map = {}
-      for (const row of data || []) map[row.typ] = row.url
+
+      for (const row of data || []) {
+        map[row.typ] = row.url
+      }
+
       setSelectedPhotos(map)
     }
 
@@ -79,9 +95,12 @@ export default function ItemsList({ filteredItems, onModeChange }) {
       queryClient.invalidateQueries({ queryKey: ['items'] })
       setSelectedItem(null)
       setConfirmDelete(false)
-      if (onModeChange) onModeChange(false)
+      onModeChange?.(false)
     },
-    onError: (err) => setActionError(err.message || 'Nie udało się usunąć przedmiotu.'),
+    onError: (err) =>
+      setActionError(
+        err.message || 'Nie udało się usunąć przedmiotu.'
+      ),
   })
 
   const openItem = (item) => {
@@ -89,7 +108,7 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     setIsEditing(false)
     setConfirmDelete(false)
     setActionError(null)
-    if (onModeChange) onModeChange(true)
+    onModeChange?.(true)
   }
 
   const startEditing = () => {
@@ -105,7 +124,7 @@ export default function ItemsList({ filteredItems, onModeChange }) {
   const backToList = () => {
     setSelectedItem(null)
     setIsEditing(false)
-    if (onModeChange) onModeChange(false)
+    onModeChange?.(false)
   }
 
   const handleSaved = (updatedItem) => {
@@ -125,13 +144,18 @@ export default function ItemsList({ filteredItems, onModeChange }) {
       )
     }
 
-    const hasMainPhotos = selectedPhotos.awers || selectedPhotos.rewers
+    const hasMainPhotos =
+      selectedPhotos.awers || selectedPhotos.rewers
+
     const isCoin = selectedItem.typ === 'moneta'
     const isBanknote = selectedItem.typ === 'banknot'
 
     return (
       <div className="mx-auto max-w-md space-y-4 p-4">
-        <button onClick={backToList} className="text-sm font-medium text-blue-600">
+        <button
+          onClick={backToList}
+          className="text-sm font-medium text-blue-600"
+        >
           ← Wróć do listy
         </button>
 
@@ -139,14 +163,27 @@ export default function ItemsList({ filteredItems, onModeChange }) {
           <div className="grid grid-cols-1 gap-2">
             {selectedPhotos.awers && (
               <div className="overflow-hidden rounded-lg bg-gray-100">
-                <img src={selectedPhotos.awers} alt="Awers" className="w-full object-contain" />
-                <p className="py-1 text-center text-xs text-gray-500">Awers</p>
+                <img
+                  src={selectedPhotos.awers}
+                  alt="Awers"
+                  className="w-full object-contain"
+                />
+                <p className="py-1 text-center text-xs text-gray-500">
+                  Awers
+                </p>
               </div>
             )}
+
             {selectedPhotos.rewers && (
               <div className="overflow-hidden rounded-lg bg-gray-100">
-                <img src={selectedPhotos.rewers} alt="Rewers" className="w-full object-contain" />
-                <p className="py-1 text-center text-xs text-gray-500">Rewers</p>
+                <img
+                  src={selectedPhotos.rewers}
+                  alt="Rewers"
+                  className="w-full object-contain"
+                />
+                <p className="py-1 text-center text-xs text-gray-500">
+                  Rewers
+                </p>
               </div>
             )}
           </div>
@@ -159,7 +196,9 @@ export default function ItemsList({ filteredItems, onModeChange }) {
               alt="Znak wodny"
               className="h-16 w-16 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-100 object-contain"
             />
-            <span className="text-xs text-gray-500">Znak wodny</span>
+            <span className="text-xs text-gray-500">
+              Znak wodny
+            </span>
           </div>
         )}
 
@@ -168,29 +207,65 @@ export default function ItemsList({ filteredItems, onModeChange }) {
           <DetailRow label="Kraj" value={selectedItem.kraj} />
           <DetailRow label="Nominał" value={selectedItem.nominal} />
           <DetailRow label="Rok" value={selectedItem.rok} />
-          {isCoin && <DetailRow label="Nakład" value={selectedItem.naklad} />}
-          <DetailRow label="Data wydania" value={selectedItem.data_wydania} />
-          <DetailRow label="Miasto wydania" value={selectedItem.miasto_wydania} />
+          {isCoin && (
+            <DetailRow label="Nakład" value={selectedItem.naklad} />
+          )}
+          <DetailRow
+            label="Data wydania"
+            value={selectedItem.data_wydania}
+          />
+          <DetailRow
+            label="Miasto wydania"
+            value={selectedItem.miasto_wydania}
+          />
           <DetailRow label="Seria" value={selectedItem.seria} />
           <DetailRow label="Nadruk" value={selectedItem.nadruk} />
-          <DetailRow label="Kod drukarni" value={selectedItem.kod_drukarni} />
-          <DetailRow label="Znak wodny (opis)" value={selectedItem.znak_wodny} />
+          <DetailRow
+            label="Kod drukarni"
+            value={selectedItem.kod_drukarni}
+          />
+          <DetailRow
+            label="Znak wodny (opis)"
+            value={selectedItem.znak_wodny}
+          />
           <DetailRow
             label="Stan zachowania"
-            value={selectedItem.stan_zachowania_etykieta || selectedItem.stan_zachowania}
+            value={
+              selectedItem.stan_zachowania_etykieta ||
+              selectedItem.stan_zachowania
+            }
           />
           <DetailRow label="Wariant" value={selectedItem.wariant} />
-          {isBanknote && <DetailRow label="Unikat" value={selectedItem.unikat ? 'Tak' : 'Nie'} />}
+          {isBanknote && (
+            <DetailRow
+              label="Unikat"
+              value={selectedItem.unikat ? 'Tak' : 'Nie'}
+            />
+          )}
           <DetailRow
             label="Cena zakupu"
-            value={selectedItem.cena_zakupu ? `${selectedItem.cena_zakupu} PLN` : null}
+            value={
+              selectedItem.cena_zakupu
+                ? `${selectedItem.cena_zakupu} PLN`
+                : null
+            }
           />
-          <DetailRow label="Data zakupu" value={selectedItem.data_zakupu} />
+          <DetailRow
+            label="Data zakupu"
+            value={selectedItem.data_zakupu}
+          />
           <DetailRow
             label="Wartość aktualna"
-            value={selectedItem.wartosc_aktualna ? `${selectedItem.wartosc_aktualna} PLN` : null}
+            value={
+              selectedItem.wartosc_aktualna
+                ? `${selectedItem.wartosc_aktualna} PLN`
+                : null
+            }
           />
-          <DetailRow label="Lokalizacja" value={selectedItem.lokalizacja} />
+          <DetailRow
+            label="Lokalizacja"
+            value={selectedItem.lokalizacja}
+          />
           <DetailRow label="Uwagi" value={selectedItem.uwagi} />
         </div>
 
@@ -203,7 +278,7 @@ export default function ItemsList({ filteredItems, onModeChange }) {
         <div className="flex gap-2">
           <button
             onClick={startEditing}
-            className="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white transition-colors hover:bg-blue-700"
+            className="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white"
           >
             Edytuj
           </button>
@@ -211,23 +286,30 @@ export default function ItemsList({ filteredItems, onModeChange }) {
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex-1 rounded-lg bg-red-50 py-3 font-medium text-red-600 transition-colors hover:bg-red-100"
+              className="flex-1 rounded-lg bg-red-50 py-3 font-medium text-red-600"
             >
               Usuń
             </button>
           ) : (
             <button
-              onClick={() => deleteMutation.mutate(selectedItem.id)}
+              onClick={() =>
+                deleteMutation.mutate(selectedItem.id)
+              }
               disabled={deleteMutation.isPending}
-              className="flex-1 rounded-lg bg-red-600 py-3 font-medium text-white transition-colors hover:bg-red-700 disabled:bg-gray-300"
+              className="flex-1 rounded-lg bg-red-600 py-3 font-medium text-white disabled:bg-gray-300"
             >
-              {deleteMutation.isPending ? 'Usuwanie...' : 'Potwierdź usunięcie'}
+              {deleteMutation.isPending
+                ? 'Usuwanie...'
+                : 'Potwierdź usunięcie'}
             </button>
           )}
         </div>
 
         {confirmDelete && !deleteMutation.isPending && (
-          <button onClick={() => setConfirmDelete(false)} className="w-full text-sm text-gray-500">
+          <button
+            onClick={() => setConfirmDelete(false)}
+            className="w-full text-sm text-gray-500"
+          >
             Anuluj usuwanie
           </button>
         )}
@@ -239,34 +321,45 @@ export default function ItemsList({ filteredItems, onModeChange }) {
     <div className="w-full">
       <div className="mx-auto max-w-md space-y-3 lg:max-w-6xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">Wyniki</h2>
-          <span className="text-sm text-gray-500">{totalCount} pozycji</span>
+          <h2 className="text-lg font-semibold text-gray-800">
+            Wyniki
+          </h2>
+
+          <span className="text-sm text-gray-500">
+            {pagination?.total ?? totalCount} pozycji
+          </span>
         </div>
 
         {filteredItems === null ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-            <p className="text-gray-500">Użyj filtrów powyżej aby wyświetlić przedmioty.</p>
+            <p className="text-gray-500">
+              Użyj filtrów powyżej aby wyświetlić przedmioty.
+            </p>
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-            <p className="text-gray-500">Brak przedmiotów spełniających kryteria.</p>
+            <p className="text-gray-500">
+              Brak przedmiotów spełniających kryteria.
+            </p>
           </div>
         ) : (
           <>
-            {items.length > 0 && (
-              <p className="text-sm text-gray-600">
-                Wartość: <span className="font-semibold text-gray-800">{totalValue.toFixed(2)} PLN</span>
-              </p>
-            )}
+            <p className="text-sm text-gray-600">
+              Wartość:{' '}
+              <span className="font-semibold text-gray-800">
+                {totalValue.toFixed(2)} PLN
+              </span>
+            </p>
 
-            <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 overflow-hidden bg-white">
+            <div className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 bg-white">
               {items.map((item) => {
                 const isCoin = item.typ === 'moneta'
+
                 return (
                   <button
                     key={item.id}
                     onClick={() => openItem(item)}
-                    className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+                    className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center gap-3">
                       {thumbnails[item.id] && (
@@ -276,22 +369,32 @@ export default function ItemsList({ filteredItems, onModeChange }) {
                           className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain"
                         />
                       )}
+
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-800">
                           {item.nominal}
                           {item.rok ? ` · ${item.rok}` : ''}
-                          {isCoin && item.naklad ? ` · nakład: ${item.naklad}` : ''}
+                          {isCoin && item.naklad
+                            ? ` · nakład: ${item.naklad}`
+                            : ''}
                         </p>
+
                         <p className="text-sm text-gray-500">
                           {item.kraj}
                         </p>
                       </div>
-                      <div className="ml-4 text-right flex-shrink-0">
+
+                      <div className="ml-4 flex-shrink-0 text-right">
                         {item.cena_zakupu && (
-                          <p className="text-sm font-medium text-gray-700">{item.cena_zakupu} PLN</p>
+                          <p className="text-sm font-medium text-gray-700">
+                            {item.cena_zakupu} PLN
+                          </p>
                         )}
+
                         {item.wartosc_aktualna && (
-                          <p className="text-xs text-gray-500">Obecna: {item.wartosc_aktualna} PLN</p>
+                          <p className="text-xs text-gray-500">
+                            Obecna: {item.wartosc_aktualna} PLN
+                          </p>
                         )}
                       </div>
                     </div>
@@ -299,6 +402,22 @@ export default function ItemsList({ filteredItems, onModeChange }) {
                 )
               })}
             </div>
+
+            {pagination?.total > 0 && (
+              <p className="text-center text-sm text-gray-500">
+                Wyświetlono {items.length} z {pagination.total} pozycji
+              </p>
+            )}
+
+            {pagination?.hasMore && (
+              <button
+                type="button"
+               onClick={onLoadMore}
+                className="w-full rounded-lg border border-blue-300 bg-white py-3 font-medium text-blue-600 hover:bg-blue-50"
+              >
+                Pokaż kolejne 20
+              </button>
+            )}
           </>
         )}
       </div>
@@ -307,7 +426,9 @@ export default function ItemsList({ filteredItems, onModeChange }) {
 }
 
 function DetailRow({ label, value }) {
-  if (value === null || value === undefined || value === '') return null
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
 
   return (
     <div className="flex justify-between px-4 py-2.5 text-sm">
