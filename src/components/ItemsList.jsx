@@ -154,7 +154,7 @@ export default function ItemsList({
       <div className="mx-auto max-w-md space-y-4 p-4">
         <button
           onClick={backToList}
-          className="text-sm font-medium text-blue-600"
+          className="text-sm font-medium text-blue-600 border border-radius p-2 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
         >
           ← Wróć do listy
         </button>
@@ -278,7 +278,7 @@ export default function ItemsList({
         <div className="flex gap-2">
           <button
             onClick={startEditing}
-            className="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white"
+            className="flex-1 rounded-lg bg-blue-600 py-3 font-medium text-white cursor-pointer"
           >
             Edytuj
           </button>
@@ -286,7 +286,7 @@ export default function ItemsList({
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex-1 rounded-lg bg-red-50 py-3 font-medium text-red-600"
+              className="flex-1 rounded-lg bg-red-50 py-3 font-medium text-red-600 cursor-pointer border border-red-200 hover:bg-red-100"
             >
               Usuń
             </button>
@@ -308,7 +308,7 @@ export default function ItemsList({
         {confirmDelete && !deleteMutation.isPending && (
           <button
             onClick={() => setConfirmDelete(false)}
-            className="w-full text-sm text-gray-500"
+            className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors border-radius p-2 rounded-lg hover:bg-gray-100 cursor-pointer border"
           >
             Anuluj usuwanie
           </button>

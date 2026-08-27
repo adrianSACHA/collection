@@ -668,6 +668,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker
                                     label="Awers"
+                                    className="mb-3"
                                     existingUrl={existingPhotos.awers}
                                     onChange={setAwersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('awers') : null}
@@ -675,6 +676,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                 />
                                 <PhotoPicker
                                     label="Rewers"
+                                    className="mb-3"
                                     existingUrl={existingPhotos.rewers}
                                     onChange={setRewersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('rewers') : null}
