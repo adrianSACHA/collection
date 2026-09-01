@@ -668,7 +668,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker
                                     label="Awers"
-                                    className="mb-3"
+                                    className="w-full cursor-pointer rounded-lg border border-gray-300 bg-white text-sm text-gray-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                                     existingUrl={existingPhotos.awers}
                                     onChange={setAwersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('awers') : null}
@@ -676,7 +676,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                 />
                                 <PhotoPicker
                                     label="Rewers"
-                                    className="mb-3"
+                                    className="w-full cursor-pointer rounded-lg border border-gray-300 bg-white text-sm text-gray-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                                     existingUrl={existingPhotos.rewers}
                                     onChange={setRewersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('rewers') : null}
@@ -741,74 +741,98 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
     )
 }
 
+function PhotoPicker({
+  label,
+  className = '',
+  existingUrl,
+  onChange,
+  onRemoveExisting,
+  removing = false,
+}) {
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
 
-function PhotoPicker({ label, existingUrl, onChange, onRemoveExisting, removing }) {
-    const [previewUrl, setPreviewUrl] = useState(null)
-    const [selectedFile, setSelectedFile] = useState(null)
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0] || null
 
-    const handleFileChange = (e) => {
-        const file = e.target.files?.[0] || null
-        setSelectedFile(file)
-        onChange(file)
-        setPreviewUrl(file ? URL.createObjectURL(file) : null)
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
     }
 
+    setSelectedFile(file)
+    onChange(file)
+    setPreviewUrl(file ? URL.createObjectURL(file) : null)
+  }
 
-    // Usuwa dopiero co wybrany (jeszcze niewgrany) plik - czyści podgląd
-    // i input, tak żeby dało się wybrać nowy plik jeszcze raz.
-    const clearSelectedFile = () => {
-        setSelectedFile(null)
-        onChange(null)
-        setPreviewUrl(null)
+  const clearSelectedFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
     }
 
+    setSelectedFile(null)
+    onChange(null)
+    setPreviewUrl(null)
+  }
 
-    const displayUrl = previewUrl || existingUrl
-    const showRemoveSelected = !!previewUrl
-    const showRemoveExisting = !previewUrl && !!existingUrl && !!onRemoveExisting
+  const displayUrl = previewUrl || existingUrl
+  const showRemoveSelected = Boolean(previewUrl)
+  const showRemoveExisting =
+    !previewUrl && Boolean(existingUrl) && Boolean(onRemoveExisting)
 
+  return (
+    <div className={className}>
+      <label className="mb-1 block text-sm font-medium text-gray-700">
+        {label}
+      </label>
 
-    return (
-        <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-            {displayUrl && (
-                <div className="relative mb-2">
-                    <img
-                        src={displayUrl}
-                        alt={label}
-                        className="h-32 w-full rounded-lg border border-gray-200 object-contain"
-                    />
-                    {showRemoveSelected && (
-                        <button
-                            type="button"
-                            onClick={clearSelectedFile}
-                            aria-label={`Usuń wybrane zdjęcie: ${label}`}
-                            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
-                        >
-                            ✕
-                        </button>
-                    )}
-                    {showRemoveExisting && (
-                        <button
-                            type="button"
-                            onClick={onRemoveExisting}
-                            disabled={removing}
-                            aria-label={`Usuń zapisane zdjęcie: ${label}`}
-                            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700 disabled:bg-gray-400"
-                        >
-                            {removing ? '...' : '✕'}
-                        </button>
-                    )}
-                </div>
-            )}
-            <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileChange}
-                className="w-full text-sm"
-            />
+      {displayUrl && (
+        <div className="relative mb-2">
+          <img
+            src={displayUrl}
+            alt={label}
+            className="h-32 w-full rounded-lg border border-gray-200 object-contain"
+          />
+
+          {showRemoveSelected && (
+            <button
+              type="button"
+              onClick={clearSelectedFile}
+              aria-label={`Usuń wybrane zdjęcie: ${label}`}
+              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+            >
+              ✕
+            </button>
+          )}
+
+          {showRemoveExisting && (
+            <button
+              type="button"
+              onClick={onRemoveExisting}
+              disabled={removing}
+              aria-label={`Usuń zapisane zdjęcie: ${label}`}
+              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700 disabled:bg-gray-400"
+            >
+              {removing ? '...' : '✕'}
+            </button>
+          )}
         </div>
-    )
+      )}
+
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="w-full text-sm"
+      />
+    </div>
+  )
 }
