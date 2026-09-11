@@ -120,7 +120,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         kraj: kraj.trim(),
         nominal: nominal.trim(),
         rok: rok ? parseInt(rok, 10) : null,
-        stan: stan.trim() || null,
+        stan_zachowania: stan.trim() || null,
         wariant: wariant.trim() || null,
         ilosc: ilosc ? parseInt(ilosc, 10) : 1,
         numer_katalogowy: numerKatalogowy.trim() || null,
