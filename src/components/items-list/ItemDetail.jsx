@@ -4,7 +4,7 @@ import Lightbox from './Lightbox'
 
 export default function ItemDetail({
   item,
-  photos,
+  photos = {},
   actionError,
   confirmDelete,
   deletePending,
@@ -16,7 +16,9 @@ export default function ItemDetail({
 }) {
   const [lightbox, setLightbox] = useState(null)
 
-  const hasMainPhotos = photos.awers || photos.rewers
+  // photos mogą być jeszcze nie wczytane (null/undefined) - traktujemy jak brak zdjęć.
+  const safePhotos = photos || {}
+  const hasMainPhotos = safePhotos.awers || safePhotos.rewers
   const isCoin = item.typ === 'moneta'
   const isBanknote = item.typ === 'banknot'
 
@@ -40,14 +42,14 @@ export default function ItemDetail({
 
       {hasMainPhotos && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {photos.awers && (
+          {safePhotos.awers && (
             <button
               type="button"
-              onClick={() => setLightbox({ url: photos.awers, label: 'Awers' })}
+              onClick={() => setLightbox({ url: safePhotos.awers, label: 'Awers' })}
               className="overflow-hidden rounded-lg bg-gray-100 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
             >
               <img
-                src={photos.awers}
+                src={safePhotos.awers}
                 alt="Awers"
                 className="w-full cursor-zoom-in object-contain"
               />
@@ -55,14 +57,14 @@ export default function ItemDetail({
             </button>
           )}
 
-          {photos.rewers && (
+          {safePhotos.rewers && (
             <button
               type="button"
-              onClick={() => setLightbox({ url: photos.rewers, label: 'Rewers' })}
+              onClick={() => setLightbox({ url: safePhotos.rewers, label: 'Rewers' })}
               className="overflow-hidden rounded-lg bg-gray-100 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
             >
               <img
-                src={photos.rewers}
+                src={safePhotos.rewers}
                 alt="Rewers"
                 className="w-full cursor-zoom-in object-contain"
               />
@@ -72,17 +74,17 @@ export default function ItemDetail({
         </div>
       )}
 
-      {photos.znak_wodny && (
+      {safePhotos.znak_wodny && (
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() =>
-              setLightbox({ url: photos.znak_wodny, label: 'Znak wodny' })
+              setLightbox({ url: safePhotos.znak_wodny, label: 'Znak wodny' })
             }
             className="flex-shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           >
             <img
-              src={photos.znak_wodny}
+              src={safePhotos.znak_wodny}
               alt="Znak wodny"
               className="h-16 w-16 cursor-zoom-in rounded-lg border border-gray-200 bg-gray-100 object-contain"
             />

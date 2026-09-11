@@ -134,17 +134,26 @@ export async function deletePhoto(itemId, typ) {
 
 /**
  * Wgrywa oba zdjęcia (awers i rewers) na raz.
+ * Zdjęcia są opcjonalne: gdy `photos` jest null albo dana strona nie została
+ * wybrana, pomijamy jej upload zamiast rzucać błędem.
  *
- * @param {{ awers: { file: File }, rewers: { file: File } }} photos
+ * @param {{ awers?: { file: File } | null, rewers?: { file: File } | null } | null} photos
  * @param {string} itemId
- * @returns {Promise<{ awers: object, rewers: object }>}
+ * @returns {Promise<{ awers: object | null, rewers: object | null }>}
  */
 export async function uploadCoinPhotos(photos, itemId) {
-  const [awersResult, rewersResult] = await Promise.all([
-    uploadPhoto(photos.awers.file, itemId, 'awers'),
-    uploadPhoto(photos.rewers.file, itemId, 'rewers'),
-  ])
+  if (!photos) {
+    return { awers: null, rewers: null }
+  }
 
+  const [awersResult, rewersResult] = await Promise.all([
+    photos.awers?.file
+      ? uploadPhoto(photos.awers.file, itemId, 'awers')
+      : Promise.resolve(null),
+    photos.rewers?.file
+      ? uploadPhoto(photos.rewers.file, itemId, 'rewers')
+      : Promise.resolve(null),
+  ])
 
   return { awers: awersResult, rewers: rewersResult }
 }
