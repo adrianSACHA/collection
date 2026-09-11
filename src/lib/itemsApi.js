@@ -1,6 +1,59 @@
 import { supabase } from './supabase'
+import {
+  applyFiltersToQuery,
+  getSortOption,
+  attachStanyLabels,
+} from './itemFilters'
 
 const PAGE_SIZE = 30
+
+// Supabase/PostgREST ma domyślny limit 1000 wierszy na zapytanie.
+// Dzielimy pobranie na "porcje", aż dostaniemy komplet.
+const EXPORT_CHUNK_SIZE = 1000
+
+/**
+  * Pobiera CAŁY zbiór spełniający filtry (bez paginacji), z etykietami stanów
+ * zachowania. Używane przez eksport CSV, żeby obejmować wszystkie rekordy,
+ * a nie tylko wczytane strony listy.
+ */
+export async function fetchAllItemsForExport(filters) {
+  const sortOption = getSortOption(filters?.sortBy)
+
+  // Słownik stanów zachowania - potrzebny do zmapowania etykiet w CSV.
+  const { data: stanyData, error: stanyError } = await supabase
+    .from('stany_zachowania')
+    .select('kod, etykieta, opis')
+
+  if (stanyError) throw stanyError
+
+  const all = []
+  let offset = 0
+
+    // Pętla z porcjami, aż pobierzemy mniej niż pełną porcję (komplet danych).
+  while (true) {
+    let query = supabase
+      .from('items')
+      .select('*')
+      .order(sortOption.column, {
+        ascending: sortOption.ascending,
+        nullsFirst: false,
+      })
+      .range(offset, offset + EXPORT_CHUNK_SIZE - 1)
+
+    query = applyFiltersToQuery(query, filters)
+
+    const { data, error } = await query
+    if (error) throw error
+
+    const rows = data || []
+    all.push(...rows)
+
+    if (rows.length < EXPORT_CHUNK_SIZE) break
+    offset += EXPORT_CHUNK_SIZE
+  }
+
+  return attachStanyLabels(all, stanyData)
+}
 
 /**
  * Pobiera jedną "stronę" przedmiotów wraz z ich zdjęciami.
@@ -23,9 +76,12 @@ export async function fetchItemsPage({ pageParam = 0, filterTyp = 'wszystkie', s
   const term = search.trim()
   if (term) {
     const isNumeric = /^\d+$/.test(term)
-    const conditions = [
+        const conditions = [
       `kraj.ilike.%${term}%`,
       `nominal.ilike.%${term}%`,
+      `numer_katalogowy.ilike.%${term}%`,
+      `mennica.ilike.%${term}%`,
+      `material.ilike.%${term}%`,
       `uwagi.ilike.%${term}%`,
     ]
     if (isNumeric) {

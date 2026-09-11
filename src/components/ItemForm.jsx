@@ -1,358 +1,48 @@
-import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../lib/supabase'
-import { uploadPhoto, deletePhoto } from '../lib/uploadPhoto'
+import { useItemForm } from './item-form/useItemForm'
+import { inputClass, PHOTO_INPUT_CLASS } from './item-form/formHelpers'
+import FormField from './item-form/FormField'
+import PhotoPicker from './item-form/PhotoPicker'
 
+export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fixedType }) {
+    const {
+        isEditMode,
+        effectiveTyp,
+        values,
+        setField,
+        nominalInputRef,
+        stanyZachowaniList,
+        loading,
+        savingMode,
+        error,
+        success,
+        fieldErrors,
+        setAwersFile,
+        setRewersFile,
+        setZnakWodnyFile,
+        existingPhotos,
+        photoUploading,
+        photoError,
+        photoDeleting,
+        photoResetKey,
+        deleteExistingPhoto,
+        handleSubmit,
+    } = useItemForm({ itemId, duplicateFrom, fixedType, onSaved })
 
-export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
-    const isEditMode = !!itemId
-
-
-    // Form fields
-    const [typ, setTyp] = useState(fixedType || 'moneta')
-    const [nominal, setNominal] = useState('')
-    const [kraj, setKraj] = useState('')
-    const [rok, setRok] = useState('')
-    const [data_wydania, setData_wydania] = useState('')
-    const [miasto_wydania, setMiasto_wydania] = useState('')
-    const [seria, setSeria] = useState('')
-    const [nadruk, setNadruk] = useState('')
-    const [kod_drukarni, setKodDrukarni] = useState('')
-    const [znak_wodny, setZnakWodny] = useState('')
-    const [naklad, setNaklad] = useState('')
-    const [unikat, setUnikat] = useState(false)
-    const [stan_zachowania, setStanZachowania] = useState('')
-    const [data_zakupu, setData_zakupu] = useState('')
-    const [cena_zakupu, setCena_zakupu] = useState('')
-    const [uwagi, setUwagi] = useState('')
-
-
-    // Zdjęcia (opcjonalne)
-    const [awersFile, setAwersFile] = useState(null)
-    const [rewersFile, setRewersFile] = useState(null)
-    const [znakWodnyFile, setZnakWodnyFile] = useState(null)
-    const [existingPhotos, setExistingPhotos] = useState({})
-    const [photoUploading, setPhotoUploading] = useState(false)
-    const [photoError, setPhotoError] = useState(null)
-    const [photoDeleting, setPhotoDeleting] = useState(null) // typ aktualnie usuwanego zdjęcia
-    const [photoResetKey, setPhotoResetKey] = useState(0) // wymusza remount PhotoPicker po "Dodaj kolejny"
-
-
-    // State
-    const [stanyZachowaniList, setStanyZachowaniList] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [savingMode, setSavingMode] = useState(null) // 'default' | 'addAnother'
-    const [error, setError] = useState(null)
-    const [success, setSuccess] = useState(false)
-    const [fieldErrors, setFieldErrors] = useState({})
-
-
-    const nominalInputRef = useRef(null)
-
-
-    useEffect(() => {
-        loadStanyZachowania()
-    }, [])
-
-
-    useEffect(() => {
-        if (isEditMode && itemId) {
-            loadItem()
-            loadPhotos(itemId)
-        }
-    }, [isEditMode, itemId])
-
-
-    // Gdy formularz jest otwierany z gotowym typem (zakładka Monety/Banknoty)
-    // i nie jest to edycja istniejącego przedmiotu, wymuszamy ten typ.
-    useEffect(() => {
-        if (fixedType && !isEditMode) setTyp(fixedType)
-    }, [fixedType, isEditMode])
-
-
-    const loadStanyZachowania = async () => {
-        try {
-            const { data, error: err } = await supabase
-                .from('stany_zachowania')
-                .select('kod, etykieta')
-                .order('kolejnosc', { ascending: true })
-            if (err) throw err
-            setStanyZachowaniList(data || [])
-        } catch (err) {
-            console.error('Błąd wczytywania stanów zachowania:', err)
-            setError('Nie udało się wczytać stanów zachowania.')
-        }
-    }
-
-
-    const loadPhotos = async (targetItemId) => {
-        const idToUse = targetItemId || itemId
-        if (!idToUse) return
-        try {
-            const { data, error: err } = await supabase
-                .from('item_photos')
-                .select('typ, url')
-                .eq('item_id', idToUse)
-            if (err) throw err
-            const map = {}
-            for (const row of data || []) map[row.typ] = row.url
-            setExistingPhotos(map)
-        } catch (err) {
-            console.error('Błąd wczytywania zdjęć:', err)
-        }
-    }
-    const loadItem = async () => {
-        try {
-            setLoading(true)
-            setError(null)
-            const { data, error: err } = await supabase
-                .from('items')
-                .select('*')
-                .eq('id', itemId)
-                .single()
-
-
-            if (err) throw err
-            if (!data) throw new Error('Przedmiot nie znaleziony.')
-
-
-            setTyp(data.typ || 'moneta')
-            setNominal(data.nominal || '')
-            setKraj(data.kraj || '')
-            setRok(data.rok ? String(data.rok) : '')
-            setData_wydania(data.data_wydania || '')
-            setMiasto_wydania(data.miasto_wydania || '')
-            setSeria(data.seria || '')
-            setNadruk(data.nadruk || '')
-            setKodDrukarni(data.kod_drukarni || '')
-            setZnakWodny(data.znak_wodny || '')
-            setNaklad(data.naklad || '')
-            setUnikat(!!data.unikat)
-            setStanZachowania(data.stan_zachowania || '')
-            setData_zakupu(data.data_zakupu || '')
-            setCena_zakupu(data.cena_zakupu ? String(data.cena_zakupu) : '')
-            setUwagi(data.uwagi || '')
-        } catch (err) {
-            console.error('Błąd wczytywania przedmiotu:', err)
-            setError('Nie udało się wczytać przedmiotu: ' + err.message)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-
-    const validateForm = () => {
-        const errors = {}
-        if (!kraj.trim()) errors.kraj = 'Kraj jest wymagany.'
-        if (!nominal.trim()) errors.nominal = 'Nominał jest wymagany.'
-
-
-        const rokNum = rok ? parseInt(rok, 10) : null
-        const hasRok = rokNum !== null && !isNaN(rokNum)
-        const hasData = data_wydania.trim() !== ''
-        if (!hasRok && !hasData) {
-            errors.date_required = 'Podaj przynajmniej rok lub datę wydania.'
-        }
-
-
-        setFieldErrors(errors)
-        return Object.keys(errors).length === 0
-    }
-
-
-    const uploadSelectedPhotos = async (targetItemId) => {
-        const tasks = []
-        if (awersFile) tasks.push(uploadPhoto(awersFile, targetItemId, 'awers'))
-        if (rewersFile) tasks.push(uploadPhoto(rewersFile, targetItemId, 'rewers'))
-        if (znakWodnyFile) tasks.push(uploadPhoto(znakWodnyFile, targetItemId, 'znak_wodny'))
-        if (tasks.length === 0) return
-
-
-        try {
-            setPhotoUploading(true)
-            setPhotoError(null)
-            await Promise.all(tasks)
-            setAwersFile(null)
-            setRewersFile(null)
-            setZnakWodnyFile(null)
-            await loadPhotos(targetItemId)   // <-- KLUCZOWA POPRAWKA: przekazujemy targetItemId
-        } catch (err) {
-            console.error('Błąd wgrywania zdjęć:', err)
-            setPhotoError('Dane zapisane, ale nie udało się wgrać zdjęć: ' + err.message)
-        } finally {
-            setPhotoUploading(false)
-        }
-    }
-
-
-    // Usuwa już zapisane zdjęcie: fizyczny plik z Supabase Storage oraz
-    // wpis w item_photos, przy edycji istniejącego przedmiotu.
-    const deleteExistingPhoto = async (photoTyp) => {
-        if (!itemId) return
-        try {
-            setPhotoDeleting(photoTyp)
-            setPhotoError(null)
-            await deletePhoto(itemId, photoTyp)
-            setExistingPhotos((prev) => {
-                const next = { ...prev }
-                delete next[photoTyp]
-                return next
-            })
-        } catch (err) {
-            console.error('Błąd usuwania zdjęcia:', err)
-            setPhotoError('Nie udało się usunąć zdjęcia: ' + err.message)
-        } finally {
-            setPhotoDeleting(null)
-        }
-    }
-
-
-    const handleSubmit = async (e, mode = 'default') => {
-        e.preventDefault()
-        setError(null)
-        setSuccess(false)
-
-
-        if (!validateForm()) return
-
-
-        try {
-            setLoading(true)
-            setSavingMode(mode)
-
-
-            let payload = {
-                typ,
-                nominal: nominal.trim(),
-                kraj: kraj.trim(),
-                rok: rok ? parseInt(rok, 10) : null,
-                data_wydania: data_wydania || null,
-                stan_zachowania: stan_zachowania || null,
-                data_zakupu: data_zakupu || null,
-                cena_zakupu: cena_zakupu ? parseFloat(cena_zakupu) : null,
-                uwagi: uwagi.trim() || null,
-            }
-
-
-            if (typ === 'banknot') {
-                payload.miasto_wydania = miasto_wydania.trim() || null
-                payload.seria = seria.trim() || null
-                payload.nadruk = nadruk.trim() || null
-                payload.kod_drukarni = kod_drukarni.trim() || null
-                payload.znak_wodny = znak_wodny.trim() || null
-                payload.naklad = null
-                payload.unikat = unikat
-            } else {
-                payload.miasto_wydania = null
-                payload.seria = null
-                payload.nadruk = null
-                payload.kod_drukarni = null
-                payload.znak_wodny = null
-                payload.naklad = naklad.trim() || null
-                payload.unikat = false
-            }
-
-
-            if (isEditMode) {
-                const { data, error: err } = await supabase
-                    .from('items')
-                    .update(payload)
-                    .eq('id', itemId)
-                    .select()
-                    .single()
-
-
-                if (err) throw err
-                setSuccess(true)
-                await uploadSelectedPhotos(itemId)
-                if (onSaved) onSaved(data)
-            } else {
-                const { data: userData, error: userErr } = await supabase.auth.getUser()
-                if (userErr) throw userErr
-                if (!userData?.user?.id) throw new Error('Nie jesteś zalogowany.')
-
-
-                payload.user_id = userData.user.id
-
-
-                const { data, error: err } = await supabase
-                    .from('items')
-                    .insert(payload)
-                    .select()
-                    .single()
-
-
-                if (err) throw err
-                setSuccess(true)
-                await uploadSelectedPhotos(data.id)
-
-
-                if (mode === 'addAnother') {
-                    resetForm({ keepType: true })
-                    // Chowamy komunikat sukcesu po chwili, żeby nie zaśmiecał
-                    // kolejnego wpisu, i przenosimy focus na Nominał.
-                    setTimeout(() => setSuccess(false), 2000)
-                    nominalInputRef.current?.focus()
-                } else {
-                    resetForm()
-                    if (onSaved) onSaved(data)
-                }
-            }
-        } catch (err) {
-            console.error('Błąd zapisywania przedmiotu:', err)
-            let errorMsg = err.message || 'Nie udało się zapisać przedmiotu.'
-            if (errorMsg.includes('check constraint')) {
-                errorMsg = 'Sprawdź wymagane pola (kraj, rok/data, pola specyficzne dla banknotu).'
-            } else if (errorMsg.includes('unique constraint')) {
-                errorMsg = 'Ten przedmiot już istnieje.'
-            }
-            setError(errorMsg)
-        } finally {
-            setLoading(false)
-            setSavingMode(null)
-        }
-    }
-
-
-    const resetForm = ({ keepType = false } = {}) => {
-        setTyp(keepType ? typ : fixedType || 'moneta')
-        setNominal('')
-        // Kraj zostaje - przy seryjnym wprowadzaniu partii z jednego kraju
-        // to najczęściej powtarzana wartość, więc wygodniej jej nie czyścić
-        // przy "Dodaj kolejny".
-        if (!keepType) setKraj('')
-        setRok('')
-        setData_wydania('')
-        setMiasto_wydania('')
-        setSeria('')
-        setNadruk('')
-        setKodDrukarni('')
-        setZnakWodny('')
-        setNaklad('')
-        setUnikat(false)
-        setStanZachowania('')
-        setData_zakupu('')
-        setCena_zakupu('')
-        setUwagi('')
-        setAwersFile(null)
-        setRewersFile(null)
-        setZnakWodnyFile(null)
-        setExistingPhotos({})
-        setFieldErrors({})
-        setPhotoResetKey((k) => k + 1)
-    }
-
+    const v = values // alias dla czytelności w JSX
 
     return (
         <form onSubmit={(e) => handleSubmit(e, 'default')} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
             <div className="mx-auto max-w-md lg:max-w-6xl">
-                <h2 className="mb-6 text-xl font-semibold text-gray-800">
+                                <h2 className="mb-6 text-xl font-semibold text-gray-800">
                     {isEditMode
                         ? 'Edytuj przedmiot'
-                        : fixedType === 'banknot'
-                            ? 'Dodaj banknot'
-                            : fixedType === 'moneta'
-                                ? 'Dodaj monetę'
-                                : 'Dodaj przedmiot'}
+                        : duplicateFrom
+                            ? 'Duplikuj przedmiot'
+                            : fixedType === 'banknot'
+                                ? 'Dodaj banknot'
+                                : fixedType === 'moneta'
+                                    ? 'Dodaj monetę'
+                                    : 'Dodaj przedmiot'}
                 </h2>
 
 
@@ -388,23 +78,21 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                     <div className="space-y-3">
                         {/* Przełącznik Typ - chowany, gdy typ jest już wybrany przez zakładkę
                             i nie jesteśmy w edycji istniejącego przedmiotu innego typu */}
-                        {!fixedType && (
+                                                {!fixedType && (
                             <div>
                                 <label className="mb-1 block text-sm font-medium text-gray-700">Typ *</label>
                                 <div className="flex gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => setTyp('moneta')}
-                                        className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${typ === 'moneta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
+                                        onClick={() => setField('typ', 'moneta')}
+                                        className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${v.typ === 'moneta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                     >
                                         Moneta
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setTyp('banknot')}
-                                        className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${typ === 'banknot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
+                                        onClick={() => setField('typ', 'banknot')}
+                                        className={`flex-1 min-h-[44px] rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${v.typ === 'banknot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                                     >
                                         Banknot
                                     </button>
@@ -412,195 +100,233 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             </div>
                         )}
 
-
-                        <div>
-                            <label htmlFor="nominal" className="mb-1 block text-sm font-medium text-gray-700">
-                                Nominał <span className="text-red-500">*</span>
-                            </label>
+                        <FormField
+                            label="Nominał"
+                            htmlFor="nominal"
+                            required
+                            error={fieldErrors.nominal}
+                        >
                             <input
                                 ref={nominalInputRef}
                                 id="nominal"
                                 type="text"
-                                value={nominal}
-                                onChange={(e) => {
-                                    setNominal(e.target.value)
-                                    if (fieldErrors.nominal) setFieldErrors({ ...fieldErrors, nominal: '' })
-                                }}
+                                value={v.nominal}
+                                onChange={(e) => setField('nominal', e.target.value)}
                                 placeholder="np. 100 zł"
-                                className={`w-full min-h-[44px] rounded-lg border px-3 py-2 lg:min-h-[40px] ${fieldErrors.nominal ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`${inputClass} ${fieldErrors.nominal ? 'border-red-500' : 'border-gray-300'}`}
                             />
-                            {fieldErrors.nominal && <span className="mt-1 text-xs text-red-600">{fieldErrors.nominal}</span>}
-                        </div>
+                        </FormField>
 
-
-                        <div>
-                            <label htmlFor="kraj" className="mb-1 block text-sm font-medium text-gray-700">
-                                Kraj <span className="text-red-500">*</span>
-                            </label>
+                        <FormField
+                            label="Kraj"
+                            htmlFor="kraj"
+                            required
+                            error={fieldErrors.kraj}
+                        >
                             <input
                                 id="kraj"
                                 type="text"
-                                value={kraj}
-                                onChange={(e) => {
-                                    setKraj(e.target.value)
-                                    if (fieldErrors.kraj) setFieldErrors({ ...fieldErrors, kraj: '' })
-                                }}
+                                value={v.kraj}
+                                onChange={(e) => setField('kraj', e.target.value)}
                                 placeholder="np. Polska"
-                                className={`w-full min-h-[44px] rounded-lg border px-3 py-2 lg:min-h-[40px] ${fieldErrors.kraj ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`${inputClass} ${fieldErrors.kraj ? 'border-red-500' : 'border-gray-300'}`}
                             />
-                            {fieldErrors.kraj && <span className="mt-1 text-xs text-red-600">{fieldErrors.kraj}</span>}
-                        </div>
-
+                        </FormField>
 
                         {/* Rok + Data wydania, a dla monet dodatkowo Nakład w tym samym rzędzie */}
                         <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label htmlFor="rok" className="mb-1 block text-sm font-medium text-gray-700">Rok</label>
+                            <FormField label="Rok" htmlFor="rok" className="flex-1">
                                 <input
                                     id="rok"
                                     type="number"
-                                    value={rok}
-                                    onChange={(e) => {
-                                        setRok(e.target.value)
-                                        if (fieldErrors.date_required) setFieldErrors({ ...fieldErrors, date_required: '' })
-                                    }}
+                                    value={v.rok}
+                                    onChange={(e) => setField('rok', e.target.value)}
                                     placeholder="np. 2023"
-                                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                    className={`${inputClass} border-gray-300`}
                                 />
-                            </div>
-                            <div className="flex-1">
-                                <label htmlFor="data_wydania" className="mb-1 block text-sm font-medium text-gray-700">
-                                    Data wydania
-                                </label>
+                            </FormField>
+                            <FormField
+                                label="Data wydania"
+                                htmlFor="data_wydania"
+                                hint="Format: DD.MM.YYYY"
+                                className="flex-1"
+                            >
                                 <input
                                     id="data_wydania"
                                     type="date"
-                                    value={data_wydania}
-                                    onChange={(e) => {
-                                        setData_wydania(e.target.value)
-                                        if (fieldErrors.date_required) setFieldErrors({ ...fieldErrors, date_required: '' })
-                                    }}
-                                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                    value={v.data_wydania}
+                                    onChange={(e) => setField('data_wydania', e.target.value)}
+                                    className={`${inputClass} border-gray-300`}
                                 />
-                                <span className="mt-1 text-xs text-gray-500">Format: DD.MM.YYYY</span>
-                            </div>
-                            {typ === 'moneta' && (
-                                <div className="flex-1">
-                                    <label htmlFor="naklad" className="mb-1 block text-sm font-medium text-gray-700">
-                                        Nakład
-                                    </label>
+                            </FormField>
+                            {effectiveTyp === 'moneta' && (
+                                <FormField label="Nakład" htmlFor="naklad" className="flex-1">
                                     <input
                                         id="naklad"
                                         type="text"
-                                        value={naklad}
-                                        onChange={(e) => setNaklad(e.target.value)}
+                                        value={v.naklad}
+                                        onChange={(e) => setField('naklad', e.target.value)}
                                         placeholder="np. 1 mln szt."
-                                        className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                        className={`${inputClass} border-gray-300`}
                                     />
-                                </div>
+                                </FormField>
                             )}
                         </div>
 
-
-                        <div>
-                            <label htmlFor="stan_zachowania" className="mb-1 block text-sm font-medium text-gray-700">
-                                Stan zachowania
-                            </label>
+                        <FormField label="Stan zachowania" htmlFor="stan_zachowania">
                             <select
                                 id="stan_zachowania"
-                                value={stan_zachowania}
-                                onChange={(e) => setStanZachowania(e.target.value)}
-                                className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                value={v.stan_zachowania}
+                                onChange={(e) => setField('stan_zachowania', e.target.value)}
+                                className={`${inputClass} border-gray-300`}
                             >
                                 <option value="">-- Wybierz --</option>
                                 {stanyZachowaniList.map((stan) => (
                                     <option key={stan.kod} value={stan.kod}>{stan.etykieta}</option>
                                 ))}
                             </select>
+                        </FormField>
+
+                        <div className="flex gap-3">
+                            <FormField label="Ilość" htmlFor="ilosc" className="w-28">
+                                <input
+                                    id="ilosc"
+                                    type="number"
+                                    min="1"
+                                    value={v.ilosc}
+                                    onChange={(e) => setField('ilosc', e.target.value)}
+                                    placeholder="1"
+                                    className={`${inputClass} border-gray-300`}
+                                />
+                            </FormField>
+                            <FormField label="Nr katalogowy" htmlFor="numer_katalogowy" className="flex-1">
+                                <input
+                                    id="numer_katalogowy"
+                                    type="text"
+                                    value={v.numer_katalogowy}
+                                    onChange={(e) => setField('numer_katalogowy', e.target.value)}
+                                    placeholder="np. Pick 182 / Fischer OB-016"
+                                    className={`${inputClass} border-gray-300`}
+                                />
+                            </FormField>
                         </div>
 
-
-                        {typ === 'banknot' && (
+                        {effectiveTyp === 'moneta' && (
                             <>
                                 <div className="flex gap-3">
-                                    <div className="flex-1">
-                                        <label htmlFor="miasto_wydania" className="mb-1 block text-sm font-medium text-gray-700">
-                                            Miasto wydania
-                                        </label>
+                                    <FormField label="Mennica" htmlFor="mennica" className="flex-1">
+                                        <input
+                                            id="mennica"
+                                            type="text"
+                                            value={v.mennica}
+                                            onChange={(e) => setField('mennica', e.target.value)}
+                                            placeholder="np. Warszawa (MW)"
+                                            className={`${inputClass} border-gray-300`}
+                                        />
+                                    </FormField>
+                                    <FormField label="Materiał / stop" htmlFor="material" className="flex-1">
+                                        <input
+                                            id="material"
+                                            type="text"
+                                            value={v.material}
+                                            onChange={(e) => setField('material', e.target.value)}
+                                            placeholder="np. Cu-Ni, Ag 925"
+                                            className={`${inputClass} border-gray-300`}
+                                        />
+                                    </FormField>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <FormField label="Waga (g)" htmlFor="waga_g" className="flex-1">
+                                        <input
+                                            id="waga_g"
+                                            type="number"
+                                            step="0.01"
+                                            value={v.waga_g}
+                                            onChange={(e) => setField('waga_g', e.target.value)}
+                                            placeholder="np. 5.00"
+                                            className={`${inputClass} border-gray-300`}
+                                        />
+                                    </FormField>
+                                    <FormField label="Średnica (mm)" htmlFor="srednica_mm" className="flex-1">
+                                        <input
+                                            id="srednica_mm"
+                                            type="number"
+                                            step="0.01"
+                                            value={v.srednica_mm}
+                                            onChange={(e) => setField('srednica_mm', e.target.value)}
+                                            placeholder="np. 24.00"
+                                            className={`${inputClass} border-gray-300`}
+                                        />
+                                    </FormField>
+                                </div>
+                            </>
+                        )}
+
+                        {effectiveTyp === 'banknot' && (
+                            <>
+                                <div className="flex gap-3">
+                                    <FormField label="Miasto wydania" htmlFor="miasto_wydania" className="flex-1">
                                         <input
                                             id="miasto_wydania"
                                             type="text"
-                                            value={miasto_wydania}
-                                            onChange={(e) => setMiasto_wydania(e.target.value)}
+                                            value={v.miasto_wydania}
+                                            onChange={(e) => setField('miasto_wydania', e.target.value)}
                                             placeholder="np. Warszawa"
-                                            className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                            className={`${inputClass} border-gray-300`}
                                         />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label htmlFor="seria" className="mb-1 block text-sm font-medium text-gray-700">Seria</label>
+                                    </FormField>
+                                    <FormField label="Seria" htmlFor="seria" className="flex-1">
                                         <input
                                             id="seria"
                                             type="text"
-                                            value={seria}
-                                            onChange={(e) => setSeria(e.target.value)}
+                                            value={v.seria}
+                                            onChange={(e) => setField('seria', e.target.value)}
                                             placeholder="np. AA 1234567"
-                                            className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                            className={`${inputClass} border-gray-300`}
                                         />
-                                    </div>
+                                    </FormField>
                                 </div>
 
-
-                                <div>
-                                    <label htmlFor="nadruk" className="mb-1 block text-sm font-medium text-gray-700">Nadruk</label>
+                                <FormField label="Nadruk" htmlFor="nadruk">
                                     <input
                                         id="nadruk"
                                         type="text"
-                                        value={nadruk}
-                                        onChange={(e) => setNadruk(e.target.value)}
+                                        value={v.nadruk}
+                                        onChange={(e) => setField('nadruk', e.target.value)}
                                         placeholder="opis nadruku"
-                                        className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                        className={`${inputClass} border-gray-300`}
                                     />
-                                </div>
+                                </FormField>
 
-
-                                <div>
-                                    <label htmlFor="kod_drukarni" className="mb-1 block text-sm font-medium text-gray-700">
-                                        Kod drukarni
-                                    </label>
+                                <FormField label="Kod drukarni" htmlFor="kod_drukarni">
                                     <input
                                         id="kod_drukarni"
                                         type="text"
-                                        value={kod_drukarni}
-                                        onChange={(e) => setKodDrukarni(e.target.value)}
+                                        value={v.kod_drukarni}
+                                        onChange={(e) => setField('kod_drukarni', e.target.value)}
                                         placeholder="np. WZP"
-                                        className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                        className={`${inputClass} border-gray-300`}
                                     />
-                                </div>
+                                </FormField>
 
-
-                                <div>
-                                    <label htmlFor="znak_wodny" className="mb-1 block text-sm font-medium text-gray-700">
-                                        Znak wodny (opis)
-                                    </label>
+                                <FormField label="Znak wodny (opis)" htmlFor="znak_wodny">
                                     <input
                                         id="znak_wodny"
                                         type="text"
-                                        value={znak_wodny}
-                                        onChange={(e) => setZnakWodny(e.target.value)}
+                                        value={v.znak_wodny}
+                                        onChange={(e) => setField('znak_wodny', e.target.value)}
                                         placeholder="opis znaku wodnego"
-                                        className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                        className={`${inputClass} border-gray-300`}
                                     />
-                                </div>
-
+                                </FormField>
 
                                 <div className="flex items-center gap-2">
                                     <input
                                         id="unikat"
                                         type="checkbox"
-                                        checked={unikat}
-                                        onChange={(e) => setUnikat(e.target.checked)}
+                                        checked={v.unikat}
+                                        onChange={(e) => setField('unikat', e.target.checked)}
                                         className="h-5 w-5 rounded border-gray-300"
                                     />
                                     <label htmlFor="unikat" className="text-sm font-medium text-gray-700">
@@ -610,48 +336,39 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             </>
                         )}
 
-
                         <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label htmlFor="data_zakupu" className="mb-1 block text-sm font-medium text-gray-700">
-                                    Data zakupu
-                                </label>
+                            <FormField label="Data zakupu" htmlFor="data_zakupu" className="flex-1">
                                 <input
                                     id="data_zakupu"
                                     type="date"
-                                    value={data_zakupu}
-                                    onChange={(e) => setData_zakupu(e.target.value)}
-                                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                    value={v.data_zakupu}
+                                    onChange={(e) => setField('data_zakupu', e.target.value)}
+                                    className={`${inputClass} border-gray-300`}
                                 />
-                            </div>
-                            <div className="flex-1">
-                                <label htmlFor="cena_zakupu" className="mb-1 block text-sm font-medium text-gray-700">
-                                    Cena zakupu (PLN)
-                                </label>
+                            </FormField>
+                            <FormField label="Cena zakupu (PLN)" htmlFor="cena_zakupu" className="flex-1">
                                 <input
                                     id="cena_zakupu"
                                     type="number"
                                     step="0.01"
-                                    value={cena_zakupu}
-                                    onChange={(e) => setCena_zakupu(e.target.value)}
+                                    value={v.cena_zakupu}
+                                    onChange={(e) => setField('cena_zakupu', e.target.value)}
                                     placeholder="0.00"
-                                    className="w-full min-h-[44px] rounded-lg border border-gray-300 px-3 py-2 lg:min-h-[40px]"
+                                    className={`${inputClass} border-gray-300`}
                                 />
-                            </div>
+                            </FormField>
                         </div>
 
-
-                        <div>
-                            <label htmlFor="uwagi" className="mb-1 block text-sm font-medium text-gray-700">Uwagi</label>
+                        <FormField label="Uwagi" htmlFor="uwagi">
                             <textarea
                                 id="uwagi"
-                                value={uwagi}
-                                onChange={(e) => setUwagi(e.target.value)}
+                                value={v.uwagi}
+                                onChange={(e) => setField('uwagi', e.target.value)}
                                 placeholder="Dodatkowe informacje..."
                                 rows="3"
                                 className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2"
                             />
-                        </div>
+                        </FormField>
                     </div>
 
 
@@ -668,7 +385,7 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker
                                     label="Awers"
-                                    className="w-full cursor-pointer rounded-lg border border-gray-300 bg-white text-sm text-gray-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+                                    className={PHOTO_INPUT_CLASS}
                                     existingUrl={existingPhotos.awers}
                                     onChange={setAwersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('awers') : null}
@@ -676,15 +393,16 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                                 />
                                 <PhotoPicker
                                     label="Rewers"
-                                    className="w-full cursor-pointer rounded-lg border border-gray-300 bg-white text-sm text-gray-600 file:mr-3 file:cursor-pointer file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+                                    className={PHOTO_INPUT_CLASS}
                                     existingUrl={existingPhotos.rewers}
                                     onChange={setRewersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('rewers') : null}
                                     removing={photoDeleting === 'rewers'}
                                 />
-                                {typ === 'banknot' && (
+                                {effectiveTyp === 'banknot' && (
                                     <PhotoPicker
                                         label="Znak wodny"
+                                        className={PHOTO_INPUT_CLASS}
                                         existingUrl={existingPhotos.znak_wodny}
                                         onChange={setZnakWodnyFile}
                                         onRemoveExisting={isEditMode ? () => deleteExistingPhoto('znak_wodny') : null}
@@ -710,7 +428,9 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                             ? 'Zapisywanie...'
                             : isEditMode
                                 ? 'Zaktualizuj'
-                                : 'Dodaj'}
+                                : duplicateFrom
+                                    ? 'Dodaj duplikat'
+                                    : 'Dodaj'}
                     </button>
 
 
@@ -737,102 +457,6 @@ export default function ItemForm({ itemId, onSaved, onCancel, fixedType }) {
                     )}
                 </div>
             </div>
-        </form>
+                </form>
     )
-}
-
-function PhotoPicker({
-  label,
-  className = '',
-  existingUrl,
-  onChange,
-  onRemoveExisting,
-  removing = false,
-}) {
-  const [previewUrl, setPreviewUrl] = useState(null)
-  const [selectedFile, setSelectedFile] = useState(null)
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-    }
-  }, [previewUrl])
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0] || null
-
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
-
-    setSelectedFile(file)
-    onChange(file)
-    setPreviewUrl(file ? URL.createObjectURL(file) : null)
-  }
-
-  const clearSelectedFile = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
-
-    setSelectedFile(null)
-    onChange(null)
-    setPreviewUrl(null)
-  }
-
-  const displayUrl = previewUrl || existingUrl
-  const showRemoveSelected = Boolean(previewUrl)
-  const showRemoveExisting =
-    !previewUrl && Boolean(existingUrl) && Boolean(onRemoveExisting)
-
-  return (
-    <div className={className}>
-      <label className="mb-1 block text-sm font-medium text-gray-700">
-        {label}
-      </label>
-
-      {displayUrl && (
-        <div className="relative mb-2">
-          <img
-            src={displayUrl}
-            alt={label}
-            className="h-32 w-full rounded-lg border border-gray-200 object-contain"
-          />
-
-          {showRemoveSelected && (
-            <button
-              type="button"
-              onClick={clearSelectedFile}
-              aria-label={`Usuń wybrane zdjęcie: ${label}`}
-              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
-            >
-              ✕
-            </button>
-          )}
-
-          {showRemoveExisting && (
-            <button
-              type="button"
-              onClick={onRemoveExisting}
-              disabled={removing}
-              aria-label={`Usuń zapisane zdjęcie: ${label}`}
-              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700 disabled:bg-gray-400"
-            >
-              {removing ? '...' : '✕'}
-            </button>
-          )}
-        </div>
-      )}
-
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileChange}
-        className="w-full text-sm"
-      />
-    </div>
-  )
 }

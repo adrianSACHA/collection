@@ -1,11 +1,19 @@
-import { useCallback, useRef, useState } from 'react'
-import ItemForm from './components/ItemForm'
+import { lazy, Suspense, useCallback, useRef, useState } from 'react'
 import ItemFilters from './components/ItemFilters'
 import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
+import LoadingFallback from './components/LoadingFallback'
+import { exportItemsToCsv } from './components/items-list/exportCsv'
+import { fetchAllItemsForExport } from './lib/itemsApi'
 import { supabase } from './lib/supabase'
 
+// Formularze ładowane leniwie - nie są potrzebne przy pierwszym renderze
+// listy, a ich kod jest spory (pola, zdjęcia, walidacja).
+const ItemForm = lazy(() => import('./components/ItemForm'))
+const QuickAddForm = lazy(() => import('./components/QuickAddForm'))
+
 const VIEW_STORAGE_KEY = 'kolekcja_widok_typ'
+const LAYOUT_STORAGE_KEY = 'kolekcja_widok_layout'
 
 function getInitialView() {
   if (typeof window === 'undefined') return 'moneta'
@@ -15,10 +23,25 @@ function getInitialView() {
   return saved === 'moneta' || saved === 'banknot' ? saved : 'moneta'
 }
 
+function getInitialLayout() {
+  if (typeof window === 'undefined') return 'lista'
+
+  const saved = window.localStorage.getItem(LAYOUT_STORAGE_KEY)
+
+  return saved === 'galeria' ? 'galeria' : 'lista'
+}
+
 function App() {
   const [view, setView] = useState(getInitialView)
   const [mode, setMode] = useState('lista')
+  const [layout, setLayout] = useState(getInitialLayout) // 'lista' | 'galeria'
+  // Tryb dodawania: 'szybki' (formularz ze zdjęciem) lub 'pelny' (wszystkie pola)
+  const [addMode, setAddMode] = useState('szybki')
   const [filterResults, setFilterResults] = useState(null)
+  // Bieżące filtry z ItemFilters - używane do eksportu CAŁEGO zbioru (nie tylko wczytanych stron).
+  const [currentFilters, setCurrentFilters] = useState(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState(null)
   const [isDetailView, setIsDetailView] = useState(false)
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
 
@@ -64,6 +87,36 @@ function App() {
     setPagination(nextPagination)
   }, [])
 
+  // ItemFilters zgłasza aktualny zestaw filtrów - potrzebny do eksportu całości.
+  const handleFilterStateChange = useCallback((nextFilters) => {
+    setCurrentFilters(nextFilters)
+  }, [])
+
+  // Eksport CSV: pobiera CAŁY zbiór spełniający bieżące filtry (nie tylko
+  // wczytane strony listy), mapuje etykiety stanów i pobiera plik.
+  const handleExportAll = useCallback(async () => {
+    if (!currentFilters || isExporting) return
+
+    try {
+      setIsExporting(true)
+      setExportError(null)
+
+      const allItems = await fetchAllItemsForExport(currentFilters)
+
+      if (allItems.length === 0) {
+        setExportError('Brak pozycji do eksportu dla bieżących filtrów.')
+        return
+      }
+
+      exportItemsToCsv(allItems, { scope: 'filtr' })
+    } catch (err) {
+      console.error('Błąd eksportu CSV:', err)
+      setExportError('Nie udało się wyeksportować kolekcji.')
+    } finally {
+      setIsExporting(false)
+    }
+  }, [currentFilters, isExporting])
+
   const switchType = (nextType) => {
     setView(nextType)
     window.localStorage.setItem(VIEW_STORAGE_KEY, nextType)
@@ -80,7 +133,8 @@ function App() {
     })
   }
 
-  const goToAdd = () => {
+  const goToAdd = (nextAddMode = 'szybki') => {
+    setAddMode(nextAddMode)
     setMode('dodaj')
     setIsDetailView(false)
   }
@@ -90,12 +144,18 @@ function App() {
     setIsDetailView(false)
   }
 
+  const changeLayout = (nextLayout) => {
+    setLayout(nextLayout)
+    window.localStorage.setItem(LAYOUT_STORAGE_KEY, nextLayout)
+  }
+
  const loadMore = () => {
   desktopFiltersRef.current?.loadMore()
 }
 
   const typLabel = view === 'moneta' ? 'monetę' : 'banknot'
   const showFilters = mode === 'lista' && !isDetailView
+  const canExport = Array.isArray(filterResults) && filterResults.length > 0
 
   return (
     <AuthGate>
@@ -162,7 +222,27 @@ function App() {
                 fixedType={view}
                 onResults={handleResults}
                 onPaginationChange={handlePaginationChange}
+                onFilterStateChange={handleFilterStateChange}
               />
+            </div>
+          )}
+
+          {showFilters && canExport && (
+            <div className="space-y-1 px-4 pb-2">
+              <button
+                type="button"
+                onClick={handleExportAll}
+                disabled={isExporting || !currentFilters}
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                {isExporting
+                  ? 'Eksportowanie…'
+                  : `⬇ Eksport CSV (wszystkie ${pagination.total})`}
+              </button>
+
+              {exportError && (
+                <p className="text-xs text-red-600">{exportError}</p>
+              )}
             </div>
           )}
 
@@ -205,6 +285,7 @@ function App() {
                         fixedType={view}
                         onResults={handleResults}
                         onPaginationChange={handlePaginationChange}
+                        onFilterStateChange={handleFilterStateChange}
                         mobilePanel
                         onClose={() => setIsMobileFiltersOpen(false)}
                       />
@@ -215,13 +296,63 @@ function App() {
 
               {showFilters && (
                 <div className="mx-auto max-w-md lg:max-w-6xl">
-                  <button
-                    type="button"
-                    onClick={goToAdd}
-                    className="w-full rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => goToAdd('szybki')}
+                      className="flex-1 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                    >
+                      📷 Szybko dodaj {typLabel}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => goToAdd('pelny')}
+                      className="flex-1 rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                    >
+                      + Pełny formularz
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {showFilters && (
+                <div className="mx-auto flex max-w-md items-center justify-between gap-3 lg:max-w-6xl">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    {view === 'moneta' ? 'Monety' : 'Banknoty'}
+                  </h2>
+
+                  <div
+                    role="group"
+                    aria-label="Sposób wyświetlania"
+                    className="inline-flex rounded-lg border border-gray-200 bg-white p-1"
                   >
-                    + Dodaj {typLabel}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => changeLayout('lista')}
+                      aria-pressed={layout === 'lista'}
+                      className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                        layout === 'lista'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      Lista
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => changeLayout('galeria')}
+                      aria-pressed={layout === 'galeria'}
+                      className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                        layout === 'galeria'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      Galeria
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -230,14 +361,25 @@ function App() {
                 onModeChange={setIsDetailView}
                 pagination={pagination}
                 onLoadMore={loadMore}
+                viewMode={layout}
               />
             </div>
+          ) : addMode === 'szybki' ? (
+            <Suspense fallback={<LoadingFallback label="Wczytywanie formularza…" />}>
+              <QuickAddForm
+                fixedType={view}
+                onSaved={backToListAfterSave}
+                onCancel={backToListAfterSave}
+              />
+            </Suspense>
           ) : (
-            <ItemForm
-              fixedType={view}
-              onSaved={backToListAfterSave}
-              onCancel={backToListAfterSave}
-            />
+            <Suspense fallback={<LoadingFallback label="Wczytywanie formularza…" />}>
+              <ItemForm
+                fixedType={view}
+                onSaved={backToListAfterSave}
+                onCancel={backToListAfterSave}
+              />
+            </Suspense>
           )}
         </main>
       </div>

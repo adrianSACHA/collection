@@ -5,6 +5,14 @@ export default function PhotoCapture({ onPhotosReady }) {
   const [rewers, setRewers] = useState(null)
   const [activeSide, setActiveSide] = useState('awers')
 
+  // Zgłaszamy komponentowi nadrzędnemu stan zdjęć, gdy tylko mamy awers.
+  // Awers jest wymagany do zapisu, rewers opcjonalny.
+  const emitPhotos = (nextAwers, nextRewers) => {
+    if (nextAwers && onPhotosReady) {
+      onPhotosReady({ awers: nextAwers, rewers: nextRewers || null })
+    }
+  }
+
   const handlePhoto = (e, side) => {
     const file = e.target.files[0]
     if (!file) return
@@ -29,14 +37,13 @@ export default function PhotoCapture({ onPhotosReady }) {
       setActiveSide('awers')
     }
 
-    if (nextAwers && nextRewers && onPhotosReady) {
-      onPhotosReady({ awers: nextAwers, rewers: nextRewers })
-    }
+    emitPhotos(nextAwers, nextRewers)
   }
 
   const retakePhoto = (side) => {
     if (side === 'awers') {
       setAwers(null)
+      onPhotosReady?.(null)
     } else {
       setRewers(null)
     }
@@ -130,14 +137,14 @@ export default function PhotoCapture({ onPhotosReady }) {
         )}
       </div>
 
-      <div className="flex justify-center gap-4 text-sm">
-        <span className={awers ? 'text-green-600' : 'text-gray-400'}>
-          {awers ? '✓ Awers' : '○ Awers'}
-        </span>
-        <span className={rewers ? 'text-green-600' : 'text-gray-400'}>
-          {rewers ? '✓ Rewers' : '○ Rewers'}
-        </span>
-      </div>
+            <div className="flex justify-center gap-4 text-sm">
+              <span className={awers ? 'text-green-600' : 'text-gray-400'}>
+                {awers ? '✓ Awers' : '○ Awers'}
+              </span>
+              <span className={rewers ? 'text-green-600' : 'text-gray-400'}>
+                {rewers ? '✓ Rewers' : '○ Rewers'}
+              </span>
+            </div>
     </div>
   )
 }

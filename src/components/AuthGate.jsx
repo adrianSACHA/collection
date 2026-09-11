@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import Login from './Login'
+import LoadingFallback from './LoadingFallback'
+
+const Login = lazy(() => import('./Login'))
 
 export default function AuthGate({ children }) {
   const [session, setSession] = useState(undefined)
@@ -57,8 +59,12 @@ export default function AuthGate({ children }) {
     )
   }
 
-  if (!session) {
-    return <Login />
+    if (!session) {
+    return (
+      <Suspense fallback={<LoadingFallback label="Wczytywanie…" />}>
+        <Login />
+      </Suspense>
+    )
   }
 
   return children

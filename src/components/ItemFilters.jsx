@@ -7,55 +7,25 @@ import {
   useState,
 } from 'react'
 import { supabase } from '../lib/supabase'
+import {
+  SORT_OPTIONS,
+  DEFAULT_SORT,
+  getDefaultFilters,
+  applyFiltersToQuery,
+  getSortOption,
+  attachStanyLabels,
+} from '../lib/itemFilters'
+import { useFilterOptions } from './item-filters/useFilterOptions'
+import FilterChips from './item-filters/FilterChips'
 
 export const PAGE_SIZE = 20
-
-const SORT_OPTIONS = [
-  {
-    value: 'created_desc',
-    label: 'Najnowsze dodane',
-    column: 'created_at',
-    ascending: false,
-  },
-  {
-    value: 'created_asc',
-    label: 'Najstarsze dodane',
-    column: 'created_at',
-    ascending: true,
-  },
-  {
-    value: 'rok_desc',
-    label: 'Rok: najnowszy → najstarszy',
-    column: 'rok',
-    ascending: false,
-  },
-  {
-    value: 'rok_asc',
-    label: 'Rok: najstarszy → najnowszy',
-    column: 'rok',
-    ascending: true,
-  },
-  {
-    value: 'cena_asc',
-    label: 'Cena zakupu: rosnąco',
-    column: 'cena_zakupu',
-    ascending: true,
-  },
-  {
-    value: 'cena_desc',
-    label: 'Cena zakupu: malejąco',
-    column: 'cena_zakupu',
-    ascending: false,
-  },
-]
-
-const DEFAULT_SORT = 'created_desc'
 
 const ItemFilters = forwardRef(function ItemFilters(
   {
     onResults,
     onLoading,
     onPaginationChange,
+    onFilterStateChange,
     fixedType,
     mobilePanel = false,
     isOpen = true,
@@ -69,24 +39,26 @@ const ItemFilters = forwardRef(function ItemFilters(
   const [miastoWydania, setMiastoWydania] = useState('')
   const [typ, setTyp] = useState(fixedType || 'wszystkie')
   const [stanZachowania, setStanZachowania] = useState('')
+  const [mennica, setMennica] = useState('')
+  const [material, setMaterial] = useState('')
   const [sortBy, setSortBy] = useState(DEFAULT_SORT)
 
-  const [stanyZachowaniList, setStanyZachowaniList] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [queryError, setQueryError] = useState(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const [currentPage, setCurrentPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
 
-  const filtersStateRef = useRef({
-    nominal: '',
-    kraj: '',
-    rok: '',
-    miastoWydania: '',
-    typ: fixedType || 'wszystkie',
-    stanZachowania: '',
-    sortBy: DEFAULT_SORT,
-  })
+  const {
+    stanyZachowania: stanyZachowaniList,
+    mennicaOptions,
+    materialOptions,
+    error: optionsError,
+  } = useFilterOptions()
+
+  const error = queryError || optionsError
+
+  const filtersStateRef = useRef(getDefaultFilters(fixedType))
 
   const requestInProgressRef = useRef(false)
 
@@ -98,8 +70,12 @@ const ItemFilters = forwardRef(function ItemFilters(
       miastoWydania,
       typ: fixedType || typ,
       stanZachowania,
+      mennica,
+      material,
       sortBy,
     }
+
+    onFilterStateChange?.(filtersStateRef.current)
   }, [
     fixedType,
     nominal,
@@ -108,74 +84,21 @@ const ItemFilters = forwardRef(function ItemFilters(
     miastoWydania,
     typ,
     stanZachowania,
+    mennica,
+    material,
     sortBy,
+    onFilterStateChange,
   ])
 
-  useEffect(() => {
-    let active = true
-
-    async function loadStanyZachowania() {
-      try {
-        const { data, error: err } = await supabase
-          .from('stany_zachowania')
-          .select('kod, etykieta, opis')
-          .order('kolejnosc', { ascending: true })
-
-        if (err) throw err
-
-        if (active) {
-          setStanyZachowaniList(data || [])
-        }
-      } catch (err) {
-        console.error('Błąd wczytywania stanów zachowania:', err)
-
-        if (active) {
-          setError('Nie udało się wczytać stanów zachowania.')
-        }
-      }
-    }
-
-    loadStanyZachowania()
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const attachStanyLabels = useCallback((items, stanyList) => {
-    const stanyMap = {}
-
-    for (const stan of stanyList) {
-      stanyMap[stan.kod] = stan
-    }
-
-    return items.map((item) => {
-      const stanInfo = item.stan_zachowania
-        ? stanyMap[item.stan_zachowania]
-        : null
-
-      return {
-        ...item,
-        stan_zachowania_etykieta: stanInfo?.etykieta || null,
-        stan_zachowania_opis: stanInfo?.opis || null,
-      }
-    })
-  }, [])
-
   const handleFilter = useCallback(
-    async ({
-      page = 0,
-      append = false,
-      sortOverride,
-      filtersOverride,
-    } = {}) => {
+    async ({ page = 0, append = false, sortOverride, filtersOverride } = {}) => {
       if (requestInProgressRef.current) return
 
       requestInProgressRef.current = true
 
       try {
         setLoading(true)
-        setError(null)
+        setQueryError(null)
         onLoading?.(true)
 
         const filters = filtersOverride || {
@@ -183,10 +106,7 @@ const ItemFilters = forwardRef(function ItemFilters(
           sortBy: sortOverride || filtersStateRef.current.sortBy,
         }
 
-        const activeSort =
-          SORT_OPTIONS.find(
-            (option) => option.value === filters.sortBy
-          ) || SORT_OPTIONS[0]
+        const activeSort = getSortOption(filters.sortBy)
 
         const start = page * PAGE_SIZE
         const end = start + PAGE_SIZE - 1
@@ -200,51 +120,13 @@ const ItemFilters = forwardRef(function ItemFilters(
           })
           .range(start, end)
 
-        if (filters.nominal.trim()) {
-          query = query.ilike(
-            'nominal',
-            `%${filters.nominal.trim()}%`
-          )
-        }
-
-        if (filters.kraj.trim()) {
-          query = query.ilike('kraj', `%${filters.kraj.trim()}%`)
-        }
-
-        if (filters.rok.trim()) {
-          const rokNum = parseInt(filters.rok, 10)
-
-          if (!Number.isNaN(rokNum)) {
-            query = query.eq('rok', rokNum)
-          }
-        }
-
-        if (filters.miastoWydania.trim()) {
-          query = query.ilike(
-            'miasto_wydania',
-            `%${filters.miastoWydania.trim()}%`
-          )
-        }
-
-        if (filters.typ !== 'wszystkie') {
-          query = query.eq('typ', filters.typ)
-        }
-
-        if (filters.stanZachowania.trim()) {
-          query = query.eq(
-            'stan_zachowania',
-            filters.stanZachowania
-          )
-        }
+        query = applyFiltersToQuery(query, filters)
 
         const { data, error: err, count } = await query
 
         if (err) throw err
 
-        const withLabels = attachStanyLabels(
-          data || [],
-          stanyZachowaniList
-        )
+        const withLabels = attachStanyLabels(data || [], stanyZachowaniList)
 
         const total = count || 0
         const loaded = start + withLabels.length
@@ -263,7 +145,7 @@ const ItemFilters = forwardRef(function ItemFilters(
         })
       } catch (err) {
         console.error('Błąd filtrowania:', err)
-        setError('Nie udało się wczytać wyników.')
+        setQueryError('Nie udało się wczytać wyników.')
         setCurrentPage(0)
         setHasMore(false)
 
@@ -281,47 +163,34 @@ const ItemFilters = forwardRef(function ItemFilters(
         onLoading?.(false)
       }
     },
-    [
-      attachStanyLabels,
-      onLoading,
-      onPaginationChange,
-      onResults,
-      stanyZachowaniList,
-    ]
+    [onLoading, onPaginationChange, onResults, stanyZachowaniList]
   )
 
   useEffect(() => {
-    const initialType = fixedType || 'wszystkie'
-
-    const initialFilters = {
-      nominal: '',
-      kraj: '',
-      rok: '',
-      miastoWydania: '',
-      typ: initialType,
-      stanZachowania: '',
-      sortBy: DEFAULT_SORT,
-    }
+    const initialFilters = getDefaultFilters(fixedType)
 
     setNominal('')
     setKraj('')
     setRok('')
     setMiastoWydania('')
-    setTyp(initialType)
+    setTyp(initialFilters.typ)
     setStanZachowania('')
+    setMennica('')
+    setMaterial('')
     setSortBy(DEFAULT_SORT)
     setCurrentPage(0)
     setHasMore(false)
 
     filtersStateRef.current = initialFilters
+    onFilterStateChange?.(initialFilters)
 
     handleFilter({
       page: 0,
       append: false,
       filtersOverride: initialFilters,
     })
- // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [fixedType])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedType])
 
   const loadMore = useCallback(() => {
     if (loading || requestInProgressRef.current || !hasMore) return
@@ -373,15 +242,7 @@ const ItemFilters = forwardRef(function ItemFilters(
   }
 
   const handleClear = () => {
-    const clearedFilters = {
-      nominal: '',
-      kraj: '',
-      rok: '',
-      miastoWydania: '',
-      typ: fixedType || 'wszystkie',
-      stanZachowania: '',
-      sortBy: DEFAULT_SORT,
-    }
+    const clearedFilters = getDefaultFilters(fixedType)
 
     setNominal('')
     setKraj('')
@@ -389,8 +250,10 @@ const ItemFilters = forwardRef(function ItemFilters(
     setMiastoWydania('')
     setTyp(clearedFilters.typ)
     setStanZachowania('')
+    setMennica('')
+    setMaterial('')
     setSortBy(DEFAULT_SORT)
-    setError(null)
+    setQueryError(null)
 
     filtersStateRef.current = clearedFilters
 
@@ -402,6 +265,48 @@ const ItemFilters = forwardRef(function ItemFilters(
   }
 
   if (mobilePanel && !isOpen) return null
+
+  // Chipsy aktywnych filtrów (bez sortowania i typu narzuconego zakładką).
+  const activeChips = [
+    nominal.trim() && {
+      key: 'nominal',
+      label: `Nominał: ${nominal.trim()}`,
+      onClear: () => setNominal(''),
+    },
+    kraj.trim() && {
+      key: 'kraj',
+      label: `Kraj: ${kraj.trim()}`,
+      onClear: () => setKraj(''),
+    },
+    rok.trim() && {
+      key: 'rok',
+      label: `Rok: ${rok.trim()}`,
+      onClear: () => setRok(''),
+    },
+    miastoWydania.trim() && {
+      key: 'miasto',
+      label: `Miasto: ${miastoWydania.trim()}`,
+      onClear: () => setMiastoWydania(''),
+    },
+    stanZachowania && {
+      key: 'stan',
+      label: `Stan: ${
+        stanyZachowaniList.find((s) => s.kod === stanZachowania)?.etykieta ||
+        stanZachowania
+      }`,
+      onClear: () => setStanZachowania(''),
+    },
+    mennica && {
+      key: 'mennica',
+      label: `Mennica: ${mennica}`,
+      onClear: () => setMennica(''),
+    },
+    material && {
+      key: 'material',
+      label: `Materiał: ${material}`,
+      onClear: () => setMaterial(''),
+    },
+  ].filter(Boolean)
 
   return (
     <div
@@ -431,6 +336,8 @@ const ItemFilters = forwardRef(function ItemFilters(
           {error}
         </div>
       )}
+
+      <FilterChips chips={activeChips} onClearAll={handleClear} />
 
       <div className="space-y-4">
         <div>
@@ -498,9 +405,7 @@ const ItemFilters = forwardRef(function ItemFilters(
           onClick={() => setIsExpanded((expanded) => !expanded)}
           className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700 lg:hidden"
         >
-          {isExpanded
-            ? '▼ Schowaj pozostałe'
-            : '▶ Rozwiń pozostałe filtry'}
+          {isExpanded ? '▼ Schowaj pozostałe' : '▶ Rozwiń pozostałe filtry'}
         </button>
       )}
 
@@ -590,6 +495,58 @@ const ItemFilters = forwardRef(function ItemFilters(
             ))}
           </select>
         </div>
+
+        {mennicaOptions.length > 0 && (
+          <div>
+            <label
+              htmlFor="filter-mennica"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
+              Mennica
+            </label>
+
+            <select
+              id="filter-mennica"
+              value={mennica}
+              onChange={(event) => setMennica(event.target.value)}
+              className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+            >
+              <option value="">-- Wszystkie --</option>
+
+              {mennicaOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {materialOptions.length > 0 && (
+          <div>
+            <label
+              htmlFor="filter-material"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
+              Materiał / stop
+            </label>
+
+            <select
+              id="filter-material"
+              value={material}
+              onChange={(event) => setMaterial(event.target.value)}
+              className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+            >
+              <option value="">-- Wszystkie --</option>
+
+              {materialOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="mt-4 flex gap-3">
