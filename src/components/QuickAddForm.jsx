@@ -11,6 +11,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   const [kraj, setKraj] = useState('')
   const [nominal, setNominal] = useState('')
   const [rok, setRok] = useState('')
+  const [dataWydania, setDataWydania] = useState('')
   const [stan, setStan] = useState('')
   const [wariant, setWariant] = useState('')
   const [ilosc, setIlosc] = useState('1')
@@ -48,6 +49,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setKraj('')
     setNominal('')
     setRok('')
+    setDataWydania('')
     setStan('')
     setWariant('')
     setIlosc('1')
@@ -120,6 +122,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         kraj: kraj.trim(),
         nominal: nominal.trim(),
         rok: rok ? parseInt(rok, 10) : null,
+        data_wydania: dataWydania || null,
         stan_zachowania: stan.trim() || null,
         wariant: wariant.trim() || null,
         ilosc: ilosc ? parseInt(ilosc, 10) : 1,
@@ -244,7 +247,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               />
             </FormField>
 
-            {/* Rok i Stan */}
+            {/* Rok, Data wydania i Stan */}
             <div className="flex gap-3">
               <FormField label="Rok" htmlFor="rok" className="flex-1">
                 <input
@@ -254,6 +257,16 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                   onChange={(e) => setRok(e.target.value)}
                   placeholder="np. 1975"
                   className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                />
+              </FormField>
+
+              <FormField label="Data wydania" htmlFor="data-wydania" className="flex-1">
+                <input
+                  id="data-wydania"
+                  type="date"
+                  value={dataWydania}
+                  onChange={(e) => setDataWydania(e.target.value)}
+                  className={`${inputClass} border-gray-300 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
                 />
               </FormField>
 
