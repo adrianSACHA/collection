@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useRef, useState } from 'react'
 import ItemFilters from './components/ItemFilters'
+import FilterModal from './components/FilterModal'
 import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
 import LoadingFallback from './components/LoadingFallback'
@@ -258,39 +259,29 @@ function App() {
         <main className="flex-1 lg:overflow-auto">
           {mode === 'lista' ? (
             <div className="space-y-4 p-4 lg:p-6">
-              {/* Przycisk i panel filtrów dostępne tylko na mobile */}
+              {/* Filtr + sortowanie na mobile: jeden przycisk otwierający modal */}
               {showFilters && (
                 <div className="lg:hidden">
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsMobileFiltersOpen(true)}
-                      className="flex-1 rounded-lg border border-gray-300 bg-white py-2.5 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-                    >
-                      ☰ Filtry
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileFiltersOpen(true)}
+                    className="w-full rounded-lg border border-gray-300 bg-white py-2.5 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                  >
+                    ☰ Filtry i sortowanie
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsMobileFiltersOpen(true)}
-                      className="flex-1 rounded-lg border border-gray-300 bg-white py-2.5 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-                    >
-                      ↕ Sortuj
-                    </button>
-                  </div>
-
-                  {isMobileFiltersOpen && (
-                    <div className="mt-3">
-                      <ItemFilters
-                        fixedType={view}
-                        onResults={handleResults}
-                        onPaginationChange={handlePaginationChange}
-                        onFilterStateChange={handleFilterStateChange}
-                        mobilePanel
-                        onClose={() => setIsMobileFiltersOpen(false)}
-                      />
-                    </div>
-                  )}
+                  <FilterModal
+                    isOpen={isMobileFiltersOpen}
+                    onClose={() => setIsMobileFiltersOpen(false)}
+                  >
+                    <ItemFilters
+                      fixedType={view}
+                      onResults={handleResults}
+                      onPaginationChange={handlePaginationChange}
+                      onFilterStateChange={handleFilterStateChange}
+                      onClose={() => setIsMobileFiltersOpen(false)}
+                    />
+                  </FilterModal>
                 </div>
               )}
 

@@ -27,12 +27,13 @@ const ItemFilters = forwardRef(function ItemFilters(
     onPaginationChange,
     onFilterStateChange,
     fixedType,
-    mobilePanel = false,
-    isOpen = true,
     onClose,
   },
   ref
 ) {
+  // Gdy przekazano onClose, komponent działa jako panel w modalu (mobile):
+  // pokazuje przycisk ✕, tytuł "Filtry i sortowanie" i zamyka się po Zastosuj.
+  const isModal = Boolean(onClose)
   const [nominal, setNominal] = useState('')
   const [kraj, setKraj] = useState('')
   const [rok, setRok] = useState('')
@@ -225,7 +226,7 @@ const ItemFilters = forwardRef(function ItemFilters(
       sortOverride: nextSort,
     })
 
-    if (mobilePanel && onClose) {
+    if (isModal) {
       onClose()
     }
   }
@@ -236,7 +237,7 @@ const ItemFilters = forwardRef(function ItemFilters(
       append: false,
     })
 
-    if (mobilePanel && onClose) {
+    if (isModal) {
       onClose()
     }
   }
@@ -263,8 +264,6 @@ const ItemFilters = forwardRef(function ItemFilters(
       filtersOverride: clearedFilters,
     })
   }
-
-  if (mobilePanel && !isOpen) return null
 
   // Chipsy aktywnych filtrów (bez sortowania i typu narzuconego zakładką).
   const activeChips = [
@@ -311,15 +310,15 @@ const ItemFilters = forwardRef(function ItemFilters(
   return (
     <div
       className={`w-full rounded-lg border border-gray-200 bg-white p-4 ${
-        mobilePanel ? 'shadow-lg' : 'lg:p-6'
+        isModal ? 'border-0 shadow-none' : 'lg:p-6'
       }`}
     >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-800">
-          {mobilePanel ? 'Filtry i sortowanie' : 'Filtry'}
+          {isModal ? 'Filtry i sortowanie' : 'Filtry'}
         </h3>
 
-        {mobilePanel && onClose && (
+        {isModal && (
           <button
             type="button"
             onClick={onClose}
@@ -399,7 +398,7 @@ const ItemFilters = forwardRef(function ItemFilters(
         </div>
       </div>
 
-      {!mobilePanel && (
+      {!isModal && (
         <button
           type="button"
           onClick={() => setIsExpanded((expanded) => !expanded)}
@@ -411,7 +410,7 @@ const ItemFilters = forwardRef(function ItemFilters(
 
       <div
         className={`mt-4 space-y-4 ${
-          mobilePanel || isExpanded ? 'block' : 'hidden'
+          isModal || isExpanded ? 'block' : 'hidden'
         } lg:block`}
       >
         <div>
