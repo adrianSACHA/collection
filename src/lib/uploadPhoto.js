@@ -26,10 +26,10 @@ export async function uploadPhoto(file, itemId, typ) {
   const storagePath = `${itemId}/${fileName}`
 
 
-  const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
     .from('photos')
     .upload(storagePath, compressedFile, {
-      cacheControl: '3600',
+      cacheControl: '0',
       upsert: true,
       contentType: 'image/jpeg',
     })
@@ -40,12 +40,14 @@ export async function uploadPhoto(file, itemId, typ) {
   }
 
 
+    // Zapisujemy publiczny URL z parametrem cache-busting (?v=...). Ścieżka pliku
+  // jest stała (itemId/typ.jpg), więc bez tego przeglądarka/CDN pokazywałaby
+  // stare zdjęcie po podmianie (ten sam URL = cache).
   const { data: urlData } = supabase.storage
     .from('photos')
     .getPublicUrl(storagePath)
 
-
-  const publicUrl = urlData.publicUrl
+  const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`
 
 
   const { data: existing, error: selectError } = await supabase

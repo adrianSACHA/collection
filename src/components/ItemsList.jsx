@@ -20,8 +20,10 @@ export default function ItemsList({
   const [duplicateItem, setDuplicateItem] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [actionError, setActionError] = useState(null)
-    const [thumbnails, setThumbnails] = useState({})
+        const [thumbnails, setThumbnails] = useState({})
   const [selectedPhotos, setSelectedPhotos] = useState({})
+  // Licznik wymuszający ponowne pobranie miniatur po zapisie (edycja/dodanie).
+  const [thumbnailsRefreshKey, setThumbnailsRefreshKey] = useState(0)
 
   const queryClient = useQueryClient()
 
@@ -60,10 +62,10 @@ export default function ItemsList({
       }
 
       setThumbnails(map)
-    }
+      }
 
-    loadThumbnails()
-  }, [itemsKey])
+      loadThumbnails()
+  }, [itemsKey, thumbnailsRefreshKey])
 
   useEffect(() => {
     if (!selectedItem || isEditing) return
@@ -130,10 +132,11 @@ export default function ItemsList({
     setDuplicateItem(null)
   }
 
-  const handleDuplicated = () => {
+    const handleDuplicated = () => {
     queryClient.invalidateQueries({ queryKey: ['items'] })
     setDuplicateItem(null)
     setSelectedItem(null)
+    setThumbnailsRefreshKey((k) => k + 1)
     onModeChange?.(false)
   }
 
@@ -148,10 +151,11 @@ export default function ItemsList({
     onModeChange?.(false)
   }
 
-  const handleSaved = (updatedItem) => {
+    const handleSaved = (updatedItem) => {
     queryClient.invalidateQueries({ queryKey: ['items'] })
     setSelectedItem(updatedItem)
     setIsEditing(false)
+    setThumbnailsRefreshKey((k) => k + 1)
   }
 
     if (duplicateItem) {

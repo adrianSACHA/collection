@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { uploadPhoto, deletePhoto } from '../../lib/uploadPhoto'
 import {
@@ -35,6 +36,8 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
   const [fieldErrors, setFieldErrors] = useState({})
 
   const nominalInputRef = useRef(null)
+
+  const queryClient = useQueryClient()
 
   // Pomocnik: aktualizacja pojedynczego pola.
   const setField = useCallback((name, value) => {
@@ -147,6 +150,8 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
         setRewersFile(null)
         setZnakWodnyFile(null)
         await loadPhotos(targetItemId)
+        // Zdjęcia zmienione - odśwież widoki oparte o react-query (inwentarz/statystyki).
+        queryClient.invalidateQueries({ queryKey: ['items'] })
       } catch (err) {
         console.error('Błąd wgrywania zdjęć:', err)
         setPhotoError('Dane zapisane, ale nie udało się wgrać zdjęć: ' + err.message)
@@ -154,7 +159,7 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
         setPhotoUploading(false)
       }
     },
-    [awersFile, rewersFile, znakWodnyFile, loadPhotos]
+    [awersFile, rewersFile, znakWodnyFile, loadPhotos, queryClient]
   )
 
   const resetForm = useCallback(
