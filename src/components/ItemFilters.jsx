@@ -37,7 +37,6 @@ const ItemFilters = forwardRef(function ItemFilters(
   const [nominal, setNominal] = useState('')
   const [kraj, setKraj] = useState('')
   const [rok, setRok] = useState('')
-  const [miastoWydania, setMiastoWydania] = useState('')
   const [typ, setTyp] = useState(fixedType || 'wszystkie')
   const [stanZachowania, setStanZachowania] = useState('')
   const [mennica, setMennica] = useState('')
@@ -68,7 +67,6 @@ const ItemFilters = forwardRef(function ItemFilters(
       nominal,
       kraj,
       rok,
-      miastoWydania,
       typ: fixedType || typ,
       stanZachowania,
       mennica,
@@ -82,7 +80,6 @@ const ItemFilters = forwardRef(function ItemFilters(
     nominal,
     kraj,
     rok,
-    miastoWydania,
     typ,
     stanZachowania,
     mennica,
@@ -173,7 +170,6 @@ const ItemFilters = forwardRef(function ItemFilters(
     setNominal('')
     setKraj('')
     setRok('')
-    setMiastoWydania('')
     setTyp(initialFilters.typ)
     setStanZachowania('')
     setMennica('')
@@ -248,7 +244,6 @@ const ItemFilters = forwardRef(function ItemFilters(
     setNominal('')
     setKraj('')
     setRok('')
-    setMiastoWydania('')
     setTyp(clearedFilters.typ)
     setStanZachowania('')
     setMennica('')
@@ -281,11 +276,6 @@ const ItemFilters = forwardRef(function ItemFilters(
       key: 'rok',
       label: `Rok: ${rok.trim()}`,
       onClear: () => setRok(''),
-    },
-    miastoWydania.trim() && {
-      key: 'miasto',
-      label: `Miasto: ${miastoWydania.trim()}`,
-      onClear: () => setMiastoWydania(''),
     },
     stanZachowania && {
       key: 'stan',
@@ -427,24 +417,6 @@ const ItemFilters = forwardRef(function ItemFilters(
             value={rok}
             onChange={(event) => setRok(event.target.value)}
             placeholder="np. 2023"
-            className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="filter-miasto"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            Miasto wydania
-          </label>
-
-          <input
-            id="filter-miasto"
-            type="text"
-            value={miastoWydania}
-            onChange={(event) => setMiastoWydania(event.target.value)}
-            placeholder="np. Warszawa"
             className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           />
         </div>

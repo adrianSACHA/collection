@@ -13,11 +13,11 @@ create table if not exists items (
   rok integer,
   data_wydania date,
   -- pola wspólne
-  stan_zachowania text,
+    stan_zachowania text,
   wariant text,
   ilosc integer default 1,
-  numer_katalogowy text,
   unikat boolean default false,
+  do_kupienia boolean default false,
   uwagi text,
   -- monety
   naklad text,

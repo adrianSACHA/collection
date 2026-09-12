@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import CropModal from './item-form/CropModal'
 
-export default function PhotoCapture({ onPhotosReady }) {
+export default function PhotoCapture({ onPhotosReady, aspect }) {
   const [awers, setAwers] = useState(null)
   const [rewers, setRewers] = useState(null)
   const [activeSide, setActiveSide] = useState('awers')
+  const [cropping, setCropping] = useState(null) // 'awers' | 'rewers' | null
 
-  // Zgłaszamy komponentowi nadrzędnemu stan zdjęć, gdy tylko mamy awers.
-  // Awers jest wymagany do zapisu, rewers opcjonalny.
+  // Zgłaszamy komponentowi nadrzędnemu stan zdjęć. Awers jest wymagany do zapisu
+  // (uploadPhoto i tak pomija brakujące strony), rewers opcjonalny.
   const emitPhotos = (nextAwers, nextRewers) => {
     if (nextAwers && onPhotosReady) {
       onPhotosReady({ awers: nextAwers, rewers: nextRewers || null })
@@ -48,6 +50,30 @@ export default function PhotoCapture({ onPhotosReady }) {
       setRewers(null)
     }
     setActiveSide(side)
+  }
+
+  // Po zatwierdzeniu kadrowania podmieniamy plik na przycięty (preview + stan).
+  const handleCropConfirm = (blob) => {
+    const side = cropping
+    if (!side) return
+
+    const croppedFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
+    const previewUrl = URL.createObjectURL(croppedFile)
+    const newPhoto = { file: croppedFile, previewUrl }
+
+    let nextAwers = awers
+    let nextRewers = rewers
+
+    if (side === 'awers') {
+      nextAwers = newPhoto
+      setAwers(newPhoto)
+    } else {
+      nextRewers = newPhoto
+      setRewers(newPhoto)
+    }
+
+    setCropping(null)
+    emitPhotos(nextAwers, nextRewers)
   }
 
   const photoInputId = `photo-upload-${activeSide}`
@@ -105,16 +131,27 @@ export default function PhotoCapture({ onPhotosReady }) {
         )}
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-3">
         {currentPhoto ? (
-          <button
-            type="button"
-            onClick={() => retakePhoto(activeSide)}
-            aria-label={activeSide === 'awers' ? 'Popraw zdjęcie awersu' : 'Popraw zdjęcie rewersu'}
-            className="min-h-[44px] rounded-lg bg-gray-200 px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          >
-            Popraw zdjęcie
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setCropping(activeSide)}
+              aria-label={activeSide === 'awers' ? 'Przytnij zdjęcie awersu' : 'Przytnij zdjęcie rewersu'}
+              className="min-h-[44px] rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            >
+              ✂ Przytnij
+            </button>
+
+            <button
+              type="button"
+              onClick={() => retakePhoto(activeSide)}
+              aria-label={activeSide === 'awers' ? 'Popraw zdjęcie awersu' : 'Popraw zdjęcie rewersu'}
+              className="min-h-[44px] rounded-lg bg-gray-200 px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            >
+              Popraw zdjęcie
+            </button>
+          </>
         ) : (
           <label
             htmlFor={photoInputId}
@@ -137,14 +174,23 @@ export default function PhotoCapture({ onPhotosReady }) {
         )}
       </div>
 
-            <div className="flex justify-center gap-4 text-sm">
-              <span className={awers ? 'text-green-600' : 'text-gray-400'}>
-                {awers ? '✓ Awers' : '○ Awers'}
-              </span>
-              <span className={rewers ? 'text-green-600' : 'text-gray-400'}>
-                {rewers ? '✓ Rewers' : '○ Rewers'}
-              </span>
-            </div>
+      <div className="flex justify-center gap-4 text-sm">
+        <span className={awers ? 'text-green-600' : 'text-gray-400'}>
+          {awers ? '✓ Awers' : '○ Awers'}
+        </span>
+        <span className={rewers ? 'text-green-600' : 'text-gray-400'}>
+          {rewers ? '✓ Rewers' : '○ Rewers'}
+        </span>
+      </div>
+
+      {cropping && (cropping === 'awers' ? awers : rewers) && (
+        <CropModal
+          imageSrc={(cropping === 'awers' ? awers : rewers).previewUrl}
+          aspect={aspect}
+          onCancel={() => setCropping(null)}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   )
 }

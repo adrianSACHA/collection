@@ -22,7 +22,7 @@ export function buildPayload(values, effectiveTyp) {
     data_wydania: values.data_wydania || null,
     stan_zachowania: values.stan_zachowania || null,
     ilosc: values.ilosc ? parseInt(values.ilosc, 10) : 1,
-    numer_katalogowy: values.numer_katalogowy.trim() || null,
+    do_kupienia: values.do_kupienia,
     mennica: values.mennica.trim() || null,
     material: values.material.trim() || null,
     waga_g: values.waga_g ? parseFloat(values.waga_g) : null,
@@ -67,7 +67,7 @@ export function validateItemForm(values) {
   const hasData = values.data_wydania.trim() !== ''
 
   if (!hasRok && !hasData) {
-    errors.date_required = 'Podaj przynajmniej rok lub datę wydania.'
+    errors.date_required = 'Podaj przynajmniej rok lub datę emisji.'
   }
 
   return errors
@@ -93,7 +93,7 @@ export function mapItemToFormState(item) {
     unikat: !!item.unikat,
     stan_zachowania: item.stan_zachowania || '',
     ilosc: item.ilosc ? String(item.ilosc) : '1',
-    numer_katalogowy: item.numer_katalogowy || '',
+    do_kupienia: !!item.do_kupienia,
     mennica: item.mennica || '',
     material: item.material || '',
     waga_g: item.waga_g ? String(item.waga_g) : '',
@@ -123,7 +123,7 @@ export function getEmptyFormState(fixedType) {
     unikat: false,
     stan_zachowania: '',
     ilosc: '1',
-    numer_katalogowy: '',
+    do_kupienia: false,
     mennica: '',
     material: '',
     waga_g: '',

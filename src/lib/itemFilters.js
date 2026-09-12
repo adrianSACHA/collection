@@ -58,7 +58,6 @@ export function getDefaultFilters(fixedType) {
     nominal: '',
     kraj: '',
     rok: '',
-    miastoWydania: '',
     typ: fixedType || 'wszystkie',
     stanZachowania: '',
     mennica: '',
@@ -85,13 +84,6 @@ export function applyFiltersToQuery(query, filters) {
     if (!Number.isNaN(rokNum)) {
       query = query.eq('rok', rokNum)
     }
-  }
-
-  if (filters.miastoWydania?.trim()) {
-    query = query.ilike(
-      'miasto_wydania',
-      `%${filters.miastoWydania.trim()}%`
-    )
   }
 
   if (filters.typ && filters.typ !== 'wszystkie') {

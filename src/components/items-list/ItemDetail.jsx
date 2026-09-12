@@ -95,12 +95,14 @@ export default function ItemDetail({
 
       <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
         <DetailRow label="Typ" value={item.typ} />
-        <DetailRow label="Kraj" value={item.kraj} />
+        <DetailRow label={isBanknote ? 'Emitent' : 'Kraj'} value={item.kraj} />
         <DetailRow label="Nominał" value={item.nominal} />
-        <DetailRow label="Rok" value={item.rok} />
+        {isCoin && <DetailRow label="Rok" value={item.rok} />}
         {isCoin && <DetailRow label="Nakład" value={item.naklad} />}
-        <DetailRow label="Data wydania" value={item.data_wydania} />
-        <DetailRow label="Miasto wydania" value={item.miasto_wydania} />
+        <DetailRow
+          label={isBanknote ? 'Data emisji' : 'Data wydania'}
+          value={item.data_wydania}
+        />
         <DetailRow label="Seria" value={item.seria} />
         <DetailRow label="Nadruk" value={item.nadruk} />
         <DetailRow label="Kod drukarni" value={item.kod_drukarni} />
@@ -110,7 +112,6 @@ export default function ItemDetail({
           value={item.stan_zachowania_etykieta || item.stan_zachowania}
         />
         <DetailRow label="Wariant" value={item.wariant} />
-        <DetailRow label="Nr katalogowy" value={item.numer_katalogowy} />
         {isCoin && (
           <>
             <DetailRow label="Mennica" value={item.mennica} />
@@ -129,6 +130,7 @@ export default function ItemDetail({
         {isBanknote && (
           <DetailRow label="Unikat" value={item.unikat ? 'Tak' : 'Nie'} />
         )}
+        <DetailRow label="Do kupienia" value={item.do_kupienia ? 'Tak' : 'Nie'} />
         <DetailRow label="Cena zakupu" value={formatWithTotal(item.cena_zakupu)} />
         <DetailRow label="Data zakupu" value={item.data_zakupu} />
         <DetailRow

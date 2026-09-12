@@ -28,18 +28,12 @@ export default function ItemsList({
     const items = useMemo(() => filteredItems || [], [filteredItems])
     const totalCount = items.length
 
-  const itemsKey = useMemo(
+    const itemsKey = useMemo(
     () => items.map((item) => item.id).join(','),
     [items]
   )
 
-    const totalValue = items.reduce((sum, item) => {
-    const unit = item.wartosc_aktualna || item.cena_zakupu || 0
-    const qty = item.ilosc && item.ilosc > 0 ? item.ilosc : 1
-    return sum + unit * qty
-  }, 0)
-
-  useEffect(() => {
+    useEffect(() => {
     if (!itemsKey) {
       return
     }
@@ -49,8 +43,8 @@ export default function ItemsList({
     async function loadThumbnails() {
       const { data, error } = await supabase
         .from('item_photos')
-        .select('item_id, url')
-        .eq('typ', 'awers')
+        .select('item_id, typ, url')
+        .in('typ', ['awers', 'rewers'])
         .in('item_id', ids)
 
       if (error) {
@@ -61,7 +55,8 @@ export default function ItemsList({
       const map = {}
 
       for (const row of data || []) {
-        map[row.item_id] = row.url
+        if (!map[row.item_id]) map[row.item_id] = {}
+        map[row.item_id][row.typ] = row.url
       }
 
       setThumbnails(map)
@@ -224,14 +219,7 @@ export default function ItemsList({
             </p>
           </div>
                 ) : (
-          <>
-            <p className="text-sm text-gray-600">
-              Suma widocznych pozycji:{' '}
-              <span className="font-semibold text-gray-800">
-                {totalValue.toFixed(2)} PLN
-              </span>
-            </p>
-
+                    <>
             {viewMode === 'galeria' ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {items.map((item) => {
@@ -243,23 +231,50 @@ export default function ItemsList({
                       onClick={() => openItem(item)}
                       className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-left transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                     >
-                      <div className="relative aspect-square w-full bg-gray-100">
-                        {thumbnails[item.id] ? (
-                          <img
-                            src={thumbnails[item.id]}
-                            alt=""
-                            loading="lazy"
-                            className="h-full w-full object-contain transition-transform group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-3xl text-gray-300">
-                            {isCoin ? '🪙' : '💵'}
-                          </div>
-                        )}
+                                            <div className="relative aspect-square w-full bg-gray-100">
+                        {(() => {
+                          const photos = thumbnails[item.id] || {}
+                          const hasAny = photos.awers || photos.rewers
+
+                          if (!hasAny) {
+                            return (
+                              <div className="flex h-full w-full items-center justify-center text-3xl text-gray-300">
+                                {isCoin ? '🪙' : '💵'}
+                              </div>
+                            )
+                          }
+
+                                                    return (
+                            <div className="flex h-full w-full flex-col">
+                              {photos.awers && (
+                                <img
+                                  src={photos.awers}
+                                  alt=""
+                                  loading="lazy"
+                                  className="min-h-0 flex-1 w-full object-contain transition-transform group-hover:scale-105"
+                                />
+                              )}
+                              {photos.rewers && (
+                                <img
+                                  src={photos.rewers}
+                                  alt=""
+                                  loading="lazy"
+                                  className="min-h-0 flex-1 w-full object-contain transition-transform group-hover:scale-105"
+                                />
+                              )}
+                            </div>
+                          )
+                        })()}
 
                         {item.unikat && (
                           <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
                             Unikat
+                          </span>
+                        )}
+
+                        {item.do_kupienia && (
+                          <span className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                            Do kupienia
                           </span>
                         )}
                       </div>
@@ -293,10 +308,10 @@ export default function ItemsList({
                       onClick={() => openItem(item)}
                       className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
                     >
-                      <div className="flex items-center gap-3">
-                        {thumbnails[item.id] ? (
+                                            <div className="flex items-center gap-3">
+                        {thumbnails[item.id]?.awers ? (
                           <img
-                            src={thumbnails[item.id]}
+                            src={thumbnails[item.id].awers}
                             alt=""
                             loading="lazy"
                             className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain"
@@ -307,7 +322,7 @@ export default function ItemsList({
                           </div>
                         )}
 
-                        <div className="min-w-0 flex-1">
+                                                <div className="min-w-0 flex-1">
                           <p className="font-medium text-gray-800">
                             {item.nominal}
                             {item.rok ? ` · ${item.rok}` : ''}
@@ -316,8 +331,13 @@ export default function ItemsList({
                               : ''}
                           </p>
 
-                          <p className="text-sm text-gray-500">
-                            {item.kraj}
+                          <p className="flex items-center gap-2 text-sm text-gray-500">
+                            <span className="truncate">{item.kraj}</span>
+                            {item.do_kupienia && (
+                              <span className="flex-shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                                Do kupienia
+                              </span>
+                            )}
                           </p>
                         </div>
 

@@ -15,12 +15,12 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   const [stan, setStan] = useState('')
   const [wariant, setWariant] = useState('')
   const [ilosc, setIlosc] = useState('1')
-  const [numerKatalogowy, setNumerKatalogowy] = useState('')
   const [mennica, setMennica] = useState('')
   const [material, setMaterial] = useState('')
   const [wagaG, setWagaG] = useState('')
   const [srednicaMm, setSrednicaMm] = useState('')
   const [unikat, setUnikat] = useState(false)
+  const [doKupienia, setDoKupienia] = useState(false)
   const [cenaZakupu, setCenaZakupu] = useState('')
   const [dataZakupu, setDataZakupu] = useState('')
   const [sprzedawca, setSprzedawca] = useState('')
@@ -53,12 +53,12 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setStan('')
     setWariant('')
     setIlosc('1')
-    setNumerKatalogowy('')
     setMennica('')
     setMaterial('')
     setWagaG('')
     setSrednicaMm('')
     setUnikat(false)
+    setDoKupienia(false)
     setCenaZakupu('')
     setDataZakupu('')
     setSprzedawca('')
@@ -126,12 +126,12 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         stan_zachowania: stan.trim() || null,
         wariant: wariant.trim() || null,
         ilosc: ilosc ? parseInt(ilosc, 10) : 1,
-        numer_katalogowy: numerKatalogowy.trim() || null,
         mennica: mennica.trim() || null,
         material: material.trim() || null,
         waga_g: wagaG ? parseFloat(wagaG) : null,
         srednica_mm: srednicaMm ? parseFloat(srednicaMm) : null,
         unikat,
+        do_kupienia: doKupienia,
         cena_zakupu: cenaZakupu ? parseFloat(cenaZakupu) : null,
         data_zakupu: dataZakupu || null,
         sprzedawca: sprzedawca.trim() || null,
@@ -149,9 +149,13 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         : 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
     }`
 
+  // Proporcja kadrowania: monety kwadratowe, banknoty 16:9.
+  const photoAspect = typ === 'banknot' ? 16 / 9 : 1
+
   const renderPhotos = () => (
     <PhotoCapture
       key={photoCaptureKey}
+      aspect={photoAspect}
       onPhotosReady={(p) => {
         setPhotos(p)
         clearFeedback()
@@ -208,7 +212,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               </div>
             )}
 
-            <FormField label="Kraj" htmlFor="kraj" required>
+            <FormField label={typ === 'banknot' ? 'Emitent' : 'Kraj'} htmlFor="kraj" required>
               <input
                 id="kraj"
                 name="kraj"
@@ -222,7 +226,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                   setKraj(e.target.value)
                   clearFeedback()
                 }}
-                placeholder="np. Polska"
+                placeholder={typ === 'banknot' ? 'np. Narodowy Bank Polski' : 'np. Polska'}
                 className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
               />
             </FormField>
@@ -247,20 +251,26 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               />
             </FormField>
 
-            {/* Rok, Data wydania i Stan */}
+            {/* Rok (monety), Data emisji/wydania i Stan */}
             <div className="flex gap-3">
-              <FormField label="Rok" htmlFor="rok" className="flex-1">
-                <input
-                  id="rok"
-                  type="number"
-                  value={rok}
-                  onChange={(e) => setRok(e.target.value)}
-                  placeholder="np. 1975"
-                  className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                />
-              </FormField>
+              {typ === 'moneta' && (
+                <FormField label="Rok" htmlFor="rok" className="flex-1">
+                  <input
+                    id="rok"
+                    type="number"
+                    value={rok}
+                    onChange={(e) => setRok(e.target.value)}
+                    placeholder="np. 1975"
+                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                  />
+                </FormField>
+              )}
 
-              <FormField label="Data wydania" htmlFor="data-wydania" className="flex-1">
+              <FormField
+                label={typ === 'banknot' ? 'Data emisji' : 'Data wydania'}
+                htmlFor="data-wydania"
+                className="flex-1"
+              >
                 <input
                   id="data-wydania"
                   type="date"
@@ -282,7 +292,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               </FormField>
             </div>
 
-            {/* Ilość i numer katalogowy */}
+            {/* Ilość */}
             <div className="flex gap-3">
               <FormField label="Ilość" htmlFor="ilosc" className="w-28">
                 <input
@@ -295,18 +305,20 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                   className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
                 />
               </FormField>
-
-              <FormField label="Nr katalogowy" htmlFor="numer-katalogowy" className="flex-1">
-                <input
-                  id="numer-katalogowy"
-                  type="text"
-                  value={numerKatalogowy}
-                  onChange={(e) => setNumerKatalogowy(e.target.value)}
-                  placeholder="np. Pick 182 / Fischer OB-016"
-                  className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                />
-              </FormField>
             </div>
+
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={doKupienia}
+                onChange={(e) => {
+                  setDoKupienia(e.target.checked)
+                  clearFeedback()
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Do kupienia</span>
+            </label>
 
             <FormField label="Cena zakupu (PLN)" htmlFor="cena-zakupu">
               <input

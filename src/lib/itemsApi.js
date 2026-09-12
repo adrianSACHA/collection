@@ -76,10 +76,9 @@ export async function fetchItemsPage({ pageParam = 0, filterTyp = 'wszystkie', s
   const term = search.trim()
   if (term) {
     const isNumeric = /^\d+$/.test(term)
-        const conditions = [
+                const conditions = [
       `kraj.ilike.%${term}%`,
       `nominal.ilike.%${term}%`,
-      `numer_katalogowy.ilike.%${term}%`,
       `mennica.ilike.%${term}%`,
       `material.ilike.%${term}%`,
       `uwagi.ilike.%${term}%`,

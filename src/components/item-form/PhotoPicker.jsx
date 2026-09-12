@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import CropModal from './CropModal'
 
 
 export default function PhotoPicker({
   label,
   className = '',
+  aspect,
   existingUrl,
   onChange,
   onRemoveExisting,
@@ -11,41 +13,71 @@ export default function PhotoPicker({
 }) {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [selectedFile, setSelectedFile] = useState(null)
+  // Oryginalny URL sprzed przycięcia - potrzebny, by móc kadrować (i wrócić) w każdej chwili.
+  const [originalUrl, setOriginalUrl] = useState(null)
+  const [isCropping, setIsCropping] = useState(false)
+
+  // Trzymamy bieżące URL-e w ref, żeby cleanup przy odmontowaniu
+  // odwołał aktualne (a nie te z pierwszego renderu).
+  const urlsRef = useRef({ previewUrl, originalUrl })
+
+  useEffect(() => {
+    urlsRef.current = { previewUrl, originalUrl }
+  }, [previewUrl, originalUrl])
 
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
+      if (urlsRef.current.previewUrl) URL.revokeObjectURL(urlsRef.current.previewUrl)
+      if (urlsRef.current.originalUrl) URL.revokeObjectURL(urlsRef.current.originalUrl)
     }
-  }, [previewUrl])
+  }, [])
+
+  const revoke = (url) => {
+    if (url) URL.revokeObjectURL(url)
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0] || null
 
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
+    if (!file) return
 
+    revoke(previewUrl)
+    revoke(originalUrl)
+
+    const url = URL.createObjectURL(file)
     setSelectedFile(file)
     onChange(file)
-    setPreviewUrl(file ? URL.createObjectURL(file) : null)
+    setPreviewUrl(url)
+    setOriginalUrl(url)
   }
 
   const clearSelectedFile = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
-
+    revoke(previewUrl)
+    revoke(originalUrl)
     setSelectedFile(null)
     onChange(null)
     setPreviewUrl(null)
+    setOriginalUrl(null)
+  }
+
+  const handleCropConfirm = (blob) => {
+    const croppedFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
+
+    revoke(previewUrl)
+    const newUrl = URL.createObjectURL(croppedFile)
+
+    setSelectedFile(croppedFile)
+    onChange(croppedFile)
+    setPreviewUrl(newUrl)
+    setIsCropping(false)
   }
 
   const displayUrl = previewUrl || existingUrl
   const showRemoveSelected = Boolean(selectedFile && previewUrl)
   const showRemoveExisting =
     !previewUrl && Boolean(existingUrl) && Boolean(onRemoveExisting)
+  // Kadrować można tylko własne, świeżo wybrane zdjęcie.
+  const showCrop = Boolean(originalUrl)
 
   return (
     <div className={className}>
@@ -86,6 +118,16 @@ export default function PhotoPicker({
         </div>
       )}
 
+      {showCrop && (
+        <button
+          type="button"
+          onClick={() => setIsCropping(true)}
+          className="mb-2 w-full rounded-lg border border-gray-300 bg-white py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        >
+          ✂ Przytnij zdjęcie
+        </button>
+      )}
+
       <input
         type="file"
         accept="image/*"
@@ -93,6 +135,15 @@ export default function PhotoPicker({
         onChange={handleFileChange}
         className="w-full text-sm"
       />
+
+      {isCropping && originalUrl && (
+        <CropModal
+          imageSrc={originalUrl}
+          aspect={aspect}
+          onCancel={() => setIsCropping(false)}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   )
 }

@@ -28,7 +28,10 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
         handleSubmit,
     } = useItemForm({ itemId, duplicateFrom, fixedType, onSaved })
 
-    const v = values // alias dla czytelności w JSX
+        const v = values // alias dla czytelności w JSX
+
+    // Proporcja kadrowania: monety kwadratowe, banknoty 16:9.
+    const photoAspect = effectiveTyp === 'banknot' ? 16 / 9 : 1
 
     return (
         <form onSubmit={(e) => handleSubmit(e, 'default')} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
@@ -117,8 +120,8 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                             />
                         </FormField>
 
-                        <FormField
-                            label="Kraj"
+                                                <FormField
+                            label={effectiveTyp === 'banknot' ? 'Emitent' : 'Kraj'}
                             htmlFor="kraj"
                             required
                             error={fieldErrors.kraj}
@@ -128,25 +131,27 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                 type="text"
                                 value={v.kraj}
                                 onChange={(e) => setField('kraj', e.target.value)}
-                                placeholder="np. Polska"
+                                placeholder={effectiveTyp === 'banknot' ? 'np. Narodowy Bank Polski' : 'np. Polska'}
                                 className={`${inputClass} ${fieldErrors.kraj ? 'border-red-500' : 'border-gray-300'}`}
                             />
                         </FormField>
 
-                        {/* Rok + Data wydania, a dla monet dodatkowo Nakład w tym samym rzędzie */}
+                        {/* Rok (tylko monety), Data emisji/wydania oraz Nakład (tylko monety) */}
                         <div className="flex gap-3">
-                            <FormField label="Rok" htmlFor="rok" className="flex-1">
-                                <input
-                                    id="rok"
-                                    type="number"
-                                    value={v.rok}
-                                    onChange={(e) => setField('rok', e.target.value)}
-                                    placeholder="np. 2023"
-                                    className={`${inputClass} border-gray-300`}
-                                />
-                            </FormField>
+                            {effectiveTyp === 'moneta' && (
+                                <FormField label="Rok" htmlFor="rok" className="flex-1">
+                                    <input
+                                        id="rok"
+                                        type="number"
+                                        value={v.rok}
+                                        onChange={(e) => setField('rok', e.target.value)}
+                                        placeholder="np. 2023"
+                                        className={`${inputClass} border-gray-300`}
+                                    />
+                                </FormField>
+                            )}
                             <FormField
-                                label="Data wydania"
+                                label={effectiveTyp === 'banknot' ? 'Data emisji' : 'Data wydania'}
                                 htmlFor="data_wydania"
                                 hint="Format: DD.MM.YYYY"
                                 className="flex-1"
@@ -187,7 +192,7 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                             </select>
                         </FormField>
 
-                        <div className="flex gap-3">
+                                                <div className="flex gap-3">
                             <FormField label="Ilość" htmlFor="ilosc" className="w-28">
                                 <input
                                     id="ilosc"
@@ -199,16 +204,19 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                     className={`${inputClass} border-gray-300`}
                                 />
                             </FormField>
-                            <FormField label="Nr katalogowy" htmlFor="numer_katalogowy" className="flex-1">
-                                <input
-                                    id="numer_katalogowy"
-                                    type="text"
-                                    value={v.numer_katalogowy}
-                                    onChange={(e) => setField('numer_katalogowy', e.target.value)}
-                                    placeholder="np. Pick 182 / Fischer OB-016"
-                                    className={`${inputClass} border-gray-300`}
-                                />
-                            </FormField>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="do_kupienia"
+                                type="checkbox"
+                                checked={v.do_kupienia}
+                                onChange={(e) => setField('do_kupienia', e.target.checked)}
+                                className="h-5 w-5 rounded border-gray-300"
+                            />
+                            <label htmlFor="do_kupienia" className="text-sm font-medium text-gray-700">
+                                Do kupienia
+                            </label>
                         </div>
 
                         {effectiveTyp === 'moneta' && (
@@ -263,30 +271,18 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                             </>
                         )}
 
-                        {effectiveTyp === 'banknot' && (
+                                                {effectiveTyp === 'banknot' && (
                             <>
-                                <div className="flex gap-3">
-                                    <FormField label="Miasto wydania" htmlFor="miasto_wydania" className="flex-1">
-                                        <input
-                                            id="miasto_wydania"
-                                            type="text"
-                                            value={v.miasto_wydania}
-                                            onChange={(e) => setField('miasto_wydania', e.target.value)}
-                                            placeholder="np. Warszawa"
-                                            className={`${inputClass} border-gray-300`}
-                                        />
-                                    </FormField>
-                                    <FormField label="Seria" htmlFor="seria" className="flex-1">
-                                        <input
-                                            id="seria"
-                                            type="text"
-                                            value={v.seria}
-                                            onChange={(e) => setField('seria', e.target.value)}
-                                            placeholder="np. AA 1234567"
-                                            className={`${inputClass} border-gray-300`}
-                                        />
-                                    </FormField>
-                                </div>
+                                <FormField label="Seria" htmlFor="seria">
+                                    <input
+                                        id="seria"
+                                        type="text"
+                                        value={v.seria}
+                                        onChange={(e) => setField('seria', e.target.value)}
+                                        placeholder="np. AA 1234567"
+                                        className={`${inputClass} border-gray-300`}
+                                    />
+                                </FormField>
 
                                 <FormField label="Nadruk" htmlFor="nadruk">
                                     <input
@@ -382,10 +378,11 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                             </p>
 
 
-                            <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                                                        <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker
                                     label="Awers"
                                     className={PHOTO_INPUT_CLASS}
+                                    aspect={photoAspect}
                                     existingUrl={existingPhotos.awers}
                                     onChange={setAwersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('awers') : null}
@@ -394,6 +391,7 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                 <PhotoPicker
                                     label="Rewers"
                                     className={PHOTO_INPUT_CLASS}
+                                    aspect={photoAspect}
                                     existingUrl={existingPhotos.rewers}
                                     onChange={setRewersFile}
                                     onRemoveExisting={isEditMode ? () => deleteExistingPhoto('rewers') : null}
@@ -403,6 +401,7 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                     <PhotoPicker
                                         label="Znak wodny"
                                         className={PHOTO_INPUT_CLASS}
+                                        aspect={photoAspect}
                                         existingUrl={existingPhotos.znak_wodny}
                                         onChange={setZnakWodnyFile}
                                         onRemoveExisting={isEditMode ? () => deleteExistingPhoto('znak_wodny') : null}
