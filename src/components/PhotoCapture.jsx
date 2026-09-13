@@ -33,11 +33,8 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
       setRewers(newPhoto)
     }
 
-    if (side === 'awers' && !nextRewers) {
-      setActiveSide('rewers')
-    } else if (side === 'rewers' && !nextAwers) {
-      setActiveSide('awers')
-    }
+    // Nie przełączamy automatycznie na drugą stronę - zostajemy na tej,
+    // którą właśnie zrobiono, żeby od razu można było ją przyciąć ("✂ Przytnij").
 
     emitPhotos(nextAwers, nextRewers)
   }
