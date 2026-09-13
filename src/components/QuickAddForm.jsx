@@ -12,7 +12,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   const [nominal, setNominal] = useState('')
   const [rok, setRok] = useState('')
   const [dataWydania, setDataWydania] = useState('')
-  const [stan, setStan] = useState('')
   const [wariant, setWariant] = useState('')
   const [ilosc, setIlosc] = useState('1')
   const [mennica, setMennica] = useState('')
@@ -20,8 +19,12 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   const [wagaG, setWagaG] = useState('')
   const [srednicaMm, setSrednicaMm] = useState('')
   const [unikat, setUnikat] = useState(false)
+  const [unc, setUnc] = useState(false)
+  const [bardzoRzadki, setBardzoRzadki] = useState(false)
+  const [rzadki, setRzadki] = useState(false)
   const [doKupienia, setDoKupienia] = useState(false)
   const [cenaZakupu, setCenaZakupu] = useState('')
+  const [cenaZakupuDo, setCenaZakupuDo] = useState('')
   const [dataZakupu, setDataZakupu] = useState('')
   const [sprzedawca, setSprzedawca] = useState('')
   const [wartoscAktualna, setWartoscAktualna] = useState('')
@@ -50,7 +53,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setNominal('')
     setRok('')
     setDataWydania('')
-    setStan('')
     setWariant('')
     setIlosc('1')
     setMennica('')
@@ -58,8 +60,12 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setWagaG('')
     setSrednicaMm('')
     setUnikat(false)
+    setUnc(false)
+    setBardzoRzadki(false)
+    setRzadki(false)
     setDoKupienia(false)
     setCenaZakupu('')
+    setCenaZakupuDo('')
     setDataZakupu('')
     setSprzedawca('')
     setWartoscAktualna('')
@@ -123,7 +129,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         nominal: nominal.trim(),
         rok: rok ? parseInt(rok, 10) : null,
         data_wydania: dataWydania || null,
-        stan_zachowania: stan.trim() || null,
         wariant: wariant.trim() || null,
         ilosc: ilosc ? parseInt(ilosc, 10) : 1,
         mennica: mennica.trim() || null,
@@ -131,8 +136,12 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         waga_g: wagaG ? parseFloat(wagaG) : null,
         srednica_mm: srednicaMm ? parseFloat(srednicaMm) : null,
         unikat,
+        unc,
+        bardzo_rzadki: bardzoRzadki,
+        rzadki,
         do_kupienia: doKupienia,
         cena_zakupu: cenaZakupu ? parseFloat(cenaZakupu) : null,
+        cena_zakupu_do: cenaZakupuDo ? parseFloat(cenaZakupuDo) : null,
         data_zakupu: dataZakupu || null,
         sprzedawca: sprzedawca.trim() || null,
         wartosc_aktualna: wartoscAktualna ? parseFloat(wartoscAktualna) : null,
@@ -212,25 +221,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               </div>
             )}
 
-            <FormField label={typ === 'banknot' ? 'Emitent' : 'Kraj'} htmlFor="kraj" required>
-              <input
-                id="kraj"
-                name="kraj"
-                type="text"
-                value={kraj}
-                required
-                aria-required="true"
-                aria-invalid={Boolean(error && !kraj.trim())}
-                aria-describedby={error ? 'form-feedback' : undefined}
-                onChange={(e) => {
-                  setKraj(e.target.value)
-                  clearFeedback()
-                }}
-                placeholder={typ === 'banknot' ? 'np. Narodowy Bank Polski' : 'np. Polska'}
-                className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-              />
-            </FormField>
-
             <FormField label="Nominał" htmlFor="nominal" required>
               <input
                 id="nominal"
@@ -251,7 +241,26 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               />
             </FormField>
 
-            {/* Rok (monety), Data emisji/wydania i Stan */}
+            <FormField label={typ === 'banknot' ? 'Emitent' : 'Kraj'} htmlFor="kraj" required>
+              <input
+                id="kraj"
+                name="kraj"
+                type="text"
+                value={kraj}
+                required
+                aria-required="true"
+                aria-invalid={Boolean(error && !kraj.trim())}
+                aria-describedby={error ? 'form-feedback' : undefined}
+                onChange={(e) => {
+                  setKraj(e.target.value)
+                  clearFeedback()
+                }}
+                placeholder={typ === 'banknot' ? 'np. Narodowy Bank Polski' : 'np. Polska'}
+                className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+              />
+            </FormField>
+
+            {/* Rok (monety) + Data emisji */}
             <div className="flex gap-3">
               {typ === 'moneta' && (
                 <FormField label="Rok" htmlFor="rok" className="flex-1">
@@ -279,58 +288,90 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                   className={`${inputClass} border-gray-300 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
                 />
               </FormField>
-
-              <FormField label="Stan" htmlFor="stan" className="flex-1">
-                <input
-                  id="stan"
-                  type="text"
-                  value={stan}
-                  onChange={(e) => setStan(e.target.value)}
-                  placeholder="np. UNC"
-                  className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                />
-              </FormField>
             </div>
 
-            {/* Ilość */}
+            {/* Cechy (flagi) - niezależne checkboxy */}
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={doKupienia}
+                  onChange={(e) => {
+                    setDoKupienia(e.target.checked)
+                    clearFeedback()
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Do kupienia</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={unc}
+                  onChange={(e) => setUnc(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">UNC</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={unikat}
+                  onChange={(e) => setUnikat(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Unikat</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={bardzoRzadki}
+                  onChange={(e) => setBardzoRzadki(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Bardzo rzadki</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={rzadki}
+                  onChange={(e) => setRzadki(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Rzadki</span>
+              </label>
+            </div>
+
+            {/* Cena od-do */}
             <div className="flex gap-3">
-              <FormField label="Ilość" htmlFor="ilosc" className="w-28">
+              <FormField label="Cena od (PLN)" htmlFor="cena-zakupu" className="flex-1">
                 <input
-                  id="ilosc"
+                  id="cena-zakupu"
                   type="number"
-                  min="1"
-                  value={ilosc}
-                  onChange={(e) => setIlosc(e.target.value)}
-                  placeholder="1"
+                  step="0.01"
+                  value={cenaZakupu}
+                  onChange={(e) => setCenaZakupu(e.target.value)}
+                  placeholder="np. 70.00"
+                  className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                />
+              </FormField>
+
+              <FormField label="Cena do (PLN)" htmlFor="cena-zakupu-do" className="flex-1">
+                <input
+                  id="cena-zakupu-do"
+                  type="number"
+                  step="0.01"
+                  value={cenaZakupuDo}
+                  onChange={(e) => setCenaZakupuDo(e.target.value)}
+                  placeholder="np. 150.00"
                   className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
                 />
               </FormField>
             </div>
-
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={doKupienia}
-                onChange={(e) => {
-                  setDoKupienia(e.target.checked)
-                  clearFeedback()
-                }}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Do kupienia</span>
-            </label>
-
-            <FormField label="Cena zakupu (PLN)" htmlFor="cena-zakupu">
-              <input
-                id="cena-zakupu"
-                type="number"
-                step="0.01"
-                value={cenaZakupu}
-                onChange={(e) => setCenaZakupu(e.target.value)}
-                placeholder="np. 25.00"
-                className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-              />
-            </FormField>
 
             <FormField label="Uwagi" htmlFor="uwagi">
               <textarea
@@ -362,6 +403,18 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                     value={wariant}
                     onChange={(e) => setWariant(e.target.value)}
                     placeholder="np. odmiana stempla"
+                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                  />
+                </FormField>
+
+                <FormField label="Ilość" htmlFor="ilosc">
+                  <input
+                    id="ilosc"
+                    type="number"
+                    min="1"
+                    value={ilosc}
+                    onChange={(e) => setIlosc(e.target.value)}
+                    placeholder="1"
                     className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
                   />
                 </FormField>

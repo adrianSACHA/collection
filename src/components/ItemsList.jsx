@@ -8,6 +8,24 @@ import { exportItemsToCsv } from './items-list/exportCsv'
 
 const ItemForm = lazy(() => import('./ItemForm'))
 
+// Formatuje datę ISO (YYYY-MM-DD) na DD.MM.RRRR.
+function formatDate(iso) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  if (!y || !m || !d) return iso
+  return `${d}.${m}.${y}`
+}
+
+// Zaznaczone flagi jako tablica (brak = pusto).
+function getFlags(item) {
+  return [
+    item.unc && 'UNC',
+    item.unikat && 'Unikat',
+    item.bardzo_rzadki && 'Bardzo rzadki',
+    item.rzadki && 'Rzadki',
+  ].filter(Boolean)
+}
+
 export default function ItemsList({
   filteredItems,
   onModeChange,
@@ -283,17 +301,26 @@ export default function ItemsList({
                         )}
                       </div>
 
-                      <div className="flex flex-1 flex-col gap-0.5 p-2.5">
+                                            <div className="flex flex-1 flex-col gap-0.5 p-2.5">
                         <p className="truncate font-medium text-gray-800">
                           {item.nominal}
-                          {item.rok ? ` · ${item.rok}` : ''}
+                          {isCoin
+                            ? item.rok
+                              ? ` · ${item.rok}`
+                              : ''
+                            : item.data_wydania
+                              ? ` · ${formatDate(item.data_wydania)}`
+                              : ''}
                         </p>
                         <p className="truncate text-xs text-gray-500">
                           {item.kraj}
+                          {getFlags(item).length > 0
+                            ? ` · ${getFlags(item).join(', ')}`
+                            : ''}
                         </p>
-                        {(item.wartosc_aktualna || item.cena_zakupu) && (
+                        {(item.cena_zakupu || item.wartosc_aktualna) && (
                           <p className="mt-auto text-xs font-medium text-gray-700">
-                            {item.wartosc_aktualna || item.cena_zakupu} PLN
+                            {item.cena_zakupu || item.wartosc_aktualna} PLN
                           </p>
                         )}
                       </div>
@@ -327,37 +354,55 @@ export default function ItemsList({
                         )}
 
                                                 <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-800">
-                            {item.nominal}
-                            {item.rok ? ` · ${item.rok}` : ''}
-                            {isCoin && item.naklad
-                              ? ` · nakład: ${item.naklad}`
-                              : ''}
-                          </p>
+                                                  <p className="font-medium text-gray-800">
+                                                    {item.nominal}
+                                                    {isCoin
+                                                      ? item.rok
+                                                        ? ` · ${item.rok}`
+                                                        : ''
+                                                      : item.data_wydania
+                                                        ? ` · ${formatDate(item.data_wydania)}`
+                                                        : ''}
+                                                    {isCoin && item.naklad
+                                                      ? ` · nakład: ${item.naklad}`
+                                                      : ''}
+                                                  </p>
 
-                          <p className="flex items-center gap-2 text-sm text-gray-500">
-                            <span className="truncate">{item.kraj}</span>
-                            {item.do_kupienia && (
-                              <span className="flex-shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-                                Do kupienia
-                              </span>
-                            )}
-                          </p>
-                        </div>
+                                                  <p className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                                                    <span className="truncate">{item.kraj}</span>
+                                                    {getFlags(item).map((flag) => (
+                                                      <span
+                                                        key={flag}
+                                                        className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
+                                                      >
+                                                        {flag}
+                                                      </span>
+                                                    ))}
+                                                  </p>
+                                                </div>
 
-                        <div className="ml-4 flex-shrink-0 text-right">
-                          {item.cena_zakupu && (
-                            <p className="text-sm font-medium text-gray-700">
-                              {item.cena_zakupu} PLN
-                            </p>
-                          )}
+                                                <div className="ml-4 flex flex-shrink-0 items-center gap-2 text-right">
+                                                  {item.do_kupienia && (
+                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                                                      Do kupienia
+                                                    </span>
+                                                  )}
 
-                          {item.wartosc_aktualna && (
-                            <p className="text-xs text-gray-500">
-                              Obecna: {item.wartosc_aktualna} PLN
-                            </p>
-                          )}
-                        </div>
+                                                  <div>
+                                                    {item.cena_zakupu && (
+                                                      <p className="text-sm font-medium text-gray-700">
+                                                        {item.cena_zakupu}
+                                                        {item.cena_zakupu_do ? `–${item.cena_zakupu_do}` : ''} PLN
+                                                      </p>
+                                                    )}
+
+                                                    {item.wartosc_aktualna && (
+                                                      <p className="text-xs text-gray-500">
+                                                        Obecna: {item.wartosc_aktualna} PLN
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                </div>
                       </div>
                     </button>
                   )

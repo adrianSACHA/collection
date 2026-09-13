@@ -8,9 +8,8 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
         isEditMode,
         effectiveTyp,
         values,
-        setField,
+                setField,
         nominalInputRef,
-        stanyZachowaniList,
         loading,
         savingMode,
         error,
@@ -178,20 +177,6 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                             )}
                         </div>
 
-                        <FormField label="Stan zachowania" htmlFor="stan_zachowania">
-                            <select
-                                id="stan_zachowania"
-                                value={v.stan_zachowania}
-                                onChange={(e) => setField('stan_zachowania', e.target.value)}
-                                className={`${inputClass} border-gray-300`}
-                            >
-                                <option value="">-- Wybierz --</option>
-                                {stanyZachowaniList.map((stan) => (
-                                    <option key={stan.kod} value={stan.kod}>{stan.etykieta}</option>
-                                ))}
-                            </select>
-                        </FormField>
-
                                                 <div className="flex gap-3">
                             <FormField label="Ilość" htmlFor="ilosc" className="w-28">
                                 <input
@@ -206,16 +191,61 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                             </FormField>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <input
-                                id="do_kupienia"
-                                type="checkbox"
-                                checked={v.do_kupienia}
-                                onChange={(e) => setField('do_kupienia', e.target.checked)}
-                                className="h-5 w-5 rounded border-gray-300"
-                            />
-                            <label htmlFor="do_kupienia" className="text-sm font-medium text-gray-700">
-                                Do kupienia
+                                                {/* Cechy (flagi) - niezależne checkboxy */}
+                        <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3">
+                            <label className="flex items-center gap-2">
+                                <input
+                                    id="do_kupienia"
+                                    type="checkbox"
+                                    checked={v.do_kupienia}
+                                    onChange={(e) => setField('do_kupienia', e.target.checked)}
+                                    className="h-5 w-5 rounded border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Do kupienia</span>
+                            </label>
+
+                            <label className="flex items-center gap-2">
+                                <input
+                                    id="unc"
+                                    type="checkbox"
+                                    checked={v.unc}
+                                    onChange={(e) => setField('unc', e.target.checked)}
+                                    className="h-5 w-5 rounded border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">UNC</span>
+                            </label>
+
+                            <label className="flex items-center gap-2">
+                                <input
+                                    id="unikat"
+                                    type="checkbox"
+                                    checked={v.unikat}
+                                    onChange={(e) => setField('unikat', e.target.checked)}
+                                    className="h-5 w-5 rounded border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Unikat</span>
+                            </label>
+
+                            <label className="flex items-center gap-2">
+                                <input
+                                    id="bardzo_rzadki"
+                                    type="checkbox"
+                                    checked={v.bardzo_rzadki}
+                                    onChange={(e) => setField('bardzo_rzadki', e.target.checked)}
+                                    className="h-5 w-5 rounded border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Bardzo rzadki</span>
+                            </label>
+
+                            <label className="flex items-center gap-2">
+                                <input
+                                    id="rzadki"
+                                    type="checkbox"
+                                    checked={v.rzadki}
+                                    onChange={(e) => setField('rzadki', e.target.checked)}
+                                    className="h-5 w-5 rounded border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Rzadki</span>
                             </label>
                         </div>
 
@@ -272,67 +302,56 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                         )}
 
                                                 {effectiveTyp === 'banknot' && (
-                            <>
-                                <FormField label="Seria" htmlFor="seria">
-                                    <input
-                                        id="seria"
-                                        type="text"
-                                        value={v.seria}
-                                        onChange={(e) => setField('seria', e.target.value)}
-                                        placeholder="np. AA 1234567"
-                                        className={`${inputClass} border-gray-300`}
-                                    />
-                                </FormField>
+                                                    <>
+                                                        <div className="flex gap-3">
+                                                            <FormField label="KN-seria" htmlFor="seria" className="flex-1">
+                                                                <input
+                                                                    id="seria"
+                                                                    type="text"
+                                                                    value={v.seria}
+                                                                    onChange={(e) => setField('seria', e.target.value)}
+                                                                    placeholder="np. AA 1234567"
+                                                                    className={`${inputClass} border-gray-300`}
+                                                                />
+                                                            </FormField>
 
-                                <FormField label="Nadruk" htmlFor="nadruk">
-                                    <input
-                                        id="nadruk"
-                                        type="text"
-                                        value={v.nadruk}
-                                        onChange={(e) => setField('nadruk', e.target.value)}
-                                        placeholder="opis nadruku"
-                                        className={`${inputClass} border-gray-300`}
-                                    />
-                                </FormField>
+                                                            <FormField label="Udr.-Bst." htmlFor="nadruk" className="flex-1">
+                                                                <input
+                                                                    id="nadruk"
+                                                                    type="text"
+                                                                    value={v.nadruk}
+                                                                    onChange={(e) => setField('nadruk', e.target.value)}
+                                                                    placeholder="opis"
+                                                                    className={`${inputClass} border-gray-300`}
+                                                                />
+                                                            </FormField>
 
-                                <FormField label="Kod drukarni" htmlFor="kod_drukarni">
-                                    <input
-                                        id="kod_drukarni"
-                                        type="text"
-                                        value={v.kod_drukarni}
-                                        onChange={(e) => setField('kod_drukarni', e.target.value)}
-                                        placeholder="np. WZP"
-                                        className={`${inputClass} border-gray-300`}
-                                    />
-                                </FormField>
+                                                            <FormField label="FZ-kod drukarni" htmlFor="kod_drukarni" className="flex-1">
+                                                                <input
+                                                                    id="kod_drukarni"
+                                                                    type="text"
+                                                                    value={v.kod_drukarni}
+                                                                    onChange={(e) => setField('kod_drukarni', e.target.value)}
+                                                                    placeholder="np. WZP"
+                                                                    className={`${inputClass} border-gray-300`}
+                                                                />
+                                                            </FormField>
+                                                        </div>
 
-                                <FormField label="Znak wodny (opis)" htmlFor="znak_wodny">
-                                    <input
-                                        id="znak_wodny"
-                                        type="text"
-                                        value={v.znak_wodny}
-                                        onChange={(e) => setField('znak_wodny', e.target.value)}
-                                        placeholder="opis znaku wodnego"
-                                        className={`${inputClass} border-gray-300`}
-                                    />
-                                </FormField>
+                                                        <FormField label="Znak wodny (opis)" htmlFor="znak_wodny">
+                                                            <input
+                                                                id="znak_wodny"
+                                                                type="text"
+                                                                value={v.znak_wodny}
+                                                                onChange={(e) => setField('znak_wodny', e.target.value)}
+                                                                placeholder="opis znaku wodnego"
+                                                                className={`${inputClass} border-gray-300`}
+                                                            />
+                                                        </FormField>
+                                                    </>
+                                                )}
 
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        id="unikat"
-                                        type="checkbox"
-                                        checked={v.unikat}
-                                        onChange={(e) => setField('unikat', e.target.checked)}
-                                        className="h-5 w-5 rounded border-gray-300"
-                                    />
-                                    <label htmlFor="unikat" className="text-sm font-medium text-gray-700">
-                                        Unikat
-                                    </label>
-                                </div>
-                            </>
-                        )}
-
-                        <div className="flex gap-3">
+                                                <div className="flex gap-3">
                             <FormField label="Data zakupu" htmlFor="data_zakupu" className="flex-1">
                                 <input
                                     id="data_zakupu"
@@ -342,13 +361,24 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                     className={`${inputClass} border-gray-300`}
                                 />
                             </FormField>
-                            <FormField label="Cena zakupu (PLN)" htmlFor="cena_zakupu" className="flex-1">
+                            <FormField label="Cena od (PLN)" htmlFor="cena_zakupu" className="flex-1">
                                 <input
                                     id="cena_zakupu"
                                     type="number"
                                     step="0.01"
                                     value={v.cena_zakupu}
                                     onChange={(e) => setField('cena_zakupu', e.target.value)}
+                                    placeholder="0.00"
+                                    className={`${inputClass} border-gray-300`}
+                                />
+                            </FormField>
+                            <FormField label="Cena do (PLN)" htmlFor="cena_zakupu_do" className="flex-1">
+                                <input
+                                    id="cena_zakupu_do"
+                                    type="number"
+                                    step="0.01"
+                                    value={v.cena_zakupu_do}
+                                    onChange={(e) => setField('cena_zakupu_do', e.target.value)}
                                     placeholder="0.00"
                                     className={`${inputClass} border-gray-300`}
                                 />

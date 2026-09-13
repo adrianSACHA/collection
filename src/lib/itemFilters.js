@@ -59,7 +59,7 @@ export function getDefaultFilters(fixedType) {
     kraj: '',
     rok: '',
     typ: fixedType || 'wszystkie',
-    stanZachowania: '',
+    znakWodny: '',
     mennica: '',
     material: '',
     sortBy: DEFAULT_SORT,
@@ -90,8 +90,8 @@ export function applyFiltersToQuery(query, filters) {
     query = query.eq('typ', filters.typ)
   }
 
-  if (filters.stanZachowania?.trim()) {
-    query = query.eq('stan_zachowania', filters.stanZachowania)
+  if (filters.znakWodny?.trim()) {
+    query = query.ilike('znak_wodny', `%${filters.znakWodny.trim()}%`)
   }
 
   if (filters.mennica?.trim()) {

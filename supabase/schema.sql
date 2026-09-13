@@ -14,11 +14,14 @@ create table if not exists items (
   data_wydania date,
   -- pola wspólne
     stan_zachowania text,
-  wariant text,
-  ilosc integer default 1,
-  unikat boolean default false,
-  do_kupienia boolean default false,
-  uwagi text,
+    wariant text,
+    ilosc integer default 1,
+    unikat boolean default false,
+    do_kupienia boolean default false,
+    unc boolean default false,
+    bardzo_rzadki boolean default false,
+    rzadki boolean default false,
+    uwagi text,
   -- monety
   naklad text,
   mennica text,
@@ -33,6 +36,7 @@ create table if not exists items (
   znak_wodny text,
   -- ewidencja
   cena_zakupu numeric,
+  cena_zakupu_do numeric,
   data_zakupu date,
     sprzedawca text,
   wartosc_aktualna numeric,

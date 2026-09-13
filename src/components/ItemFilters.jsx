@@ -38,7 +38,7 @@ const ItemFilters = forwardRef(function ItemFilters(
   const [kraj, setKraj] = useState('')
   const [rok, setRok] = useState('')
   const [typ, setTyp] = useState(fixedType || 'wszystkie')
-  const [stanZachowania, setStanZachowania] = useState('')
+  const [znakWodny, setZnakWodny] = useState('')
   const [mennica, setMennica] = useState('')
   const [material, setMaterial] = useState('')
   const [sortBy, setSortBy] = useState(DEFAULT_SORT)
@@ -68,7 +68,7 @@ const ItemFilters = forwardRef(function ItemFilters(
       kraj,
       rok,
       typ: fixedType || typ,
-      stanZachowania,
+      znakWodny,
       mennica,
       material,
       sortBy,
@@ -81,7 +81,7 @@ const ItemFilters = forwardRef(function ItemFilters(
     kraj,
     rok,
     typ,
-    stanZachowania,
+    znakWodny,
     mennica,
     material,
     sortBy,
@@ -171,7 +171,7 @@ const ItemFilters = forwardRef(function ItemFilters(
     setKraj('')
     setRok('')
     setTyp(initialFilters.typ)
-    setStanZachowania('')
+    setZnakWodny('')
     setMennica('')
     setMaterial('')
     setSortBy(DEFAULT_SORT)
@@ -245,7 +245,7 @@ const ItemFilters = forwardRef(function ItemFilters(
     setKraj('')
     setRok('')
     setTyp(clearedFilters.typ)
-    setStanZachowania('')
+    setZnakWodny('')
     setMennica('')
     setMaterial('')
     setSortBy(DEFAULT_SORT)
@@ -277,13 +277,10 @@ const ItemFilters = forwardRef(function ItemFilters(
       label: `Rok: ${rok.trim()}`,
       onClear: () => setRok(''),
     },
-    stanZachowania && {
-      key: 'stan',
-      label: `Stan: ${
-        stanyZachowaniList.find((s) => s.kod === stanZachowania)?.etykieta ||
-        stanZachowania
-      }`,
-      onClear: () => setStanZachowania(''),
+    znakWodny.trim() && {
+      key: 'znakWodny',
+      label: `Znak wodny: ${znakWodny.trim()}`,
+      onClear: () => setZnakWodny(''),
     },
     mennica && {
       key: 'mennica',
@@ -408,7 +405,7 @@ const ItemFilters = forwardRef(function ItemFilters(
             htmlFor="filter-rok"
             className="mb-1 block text-sm font-medium text-gray-700"
           >
-            Rok
+            Data emisji (rok)
           </label>
 
           <input
@@ -445,26 +442,20 @@ const ItemFilters = forwardRef(function ItemFilters(
 
         <div>
           <label
-            htmlFor="filter-stan"
+            htmlFor="filter-znak-wodny"
             className="mb-1 block text-sm font-medium text-gray-700"
           >
-            Stan zachowania
+            Znak wodny
           </label>
 
-          <select
-            id="filter-stan"
-            value={stanZachowania}
-            onChange={(event) => setStanZachowania(event.target.value)}
-            className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
-          >
-            <option value="">-- Wszystkie --</option>
-
-            {stanyZachowaniList.map((stan) => (
-              <option key={stan.kod} value={stan.kod}>
-                {stan.etykieta}
-              </option>
-            ))}
-          </select>
+          <input
+            id="filter-znak-wodny"
+            type="text"
+            value={znakWodny}
+            onChange={(event) => setZnakWodny(event.target.value)}
+            placeholder="np. sześciokątna gwiazda"
+            className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+          />
         </div>
 
         {mennicaOptions.length > 0 && (

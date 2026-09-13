@@ -31,6 +31,24 @@ export default function ItemDetail({
     return base
   }
 
+  // Cena jako przedział: "70–150 PLN" albo "70 PLN".
+  const formatCenaZakupu = () => {
+    const od = item.cena_zakupu
+    const do_ = item.cena_zakupu_do
+    if (!od && !do_) return null
+    if (od && do_) return `${od}–${do_} PLN`
+    if (od) return `${od} PLN`
+    return `do ${do_} PLN`
+  }
+
+  // Zaznaczone flagi (pokazujemy tylko wybrane, brak = nic się nie pokazuje).
+  const flagi = [
+    item.unc && 'UNC',
+    item.unikat && 'Unikat',
+    item.bardzo_rzadki && 'Bardzo rzadki',
+    item.rzadki && 'Rzadki',
+  ].filter(Boolean)
+
   return (
     <div className="mx-auto max-w-md space-y-4 p-4">
       <button
@@ -89,12 +107,13 @@ export default function ItemDetail({
               className="h-16 w-16 cursor-zoom-in rounded-lg border border-gray-200 bg-gray-100 object-contain"
             />
           </button>
-          <span className="text-xs text-gray-500">Znak wodny</span>
+          <span className="text-xs text-gray-500">
+            {item.znak_wodny ? `Znak wodny – ${item.znak_wodny}` : 'Znak wodny'}
+          </span>
         </div>
       )}
 
       <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-        <DetailRow label="Typ" value={item.typ} />
         <DetailRow label={isBanknote ? 'Emitent' : 'Kraj'} value={item.kraj} />
         <DetailRow label="Nominał" value={item.nominal} />
         {isCoin && <DetailRow label="Rok" value={item.rok} />}
@@ -103,13 +122,12 @@ export default function ItemDetail({
           label={isBanknote ? 'Data emisji' : 'Data wydania'}
           value={item.data_wydania}
         />
-        <DetailRow label="Seria" value={item.seria} />
-        <DetailRow label="Nadruk" value={item.nadruk} />
-        <DetailRow label="Kod drukarni" value={item.kod_drukarni} />
-        <DetailRow label="Znak wodny (opis)" value={item.znak_wodny} />
+        <DetailRow label="KN-seria" value={item.seria} />
+        <DetailRow label="Udr.-Bst." value={item.nadruk} />
+        <DetailRow label="FZ-kod drukarni" value={item.kod_drukarni} />
         <DetailRow
-          label="Stan zachowania"
-          value={item.stan_zachowania_etykieta || item.stan_zachowania}
+          label="Znak wodny"
+          value={item.znak_wodny ? `Znak wodny – ${item.znak_wodny}` : null}
         />
         <DetailRow label="Wariant" value={item.wariant} />
         {isCoin && (
@@ -127,11 +145,11 @@ export default function ItemDetail({
           label="Ilość"
           value={item.ilosc ? `${item.ilosc} szt.` : null}
         />
-        {isBanknote && (
-          <DetailRow label="Unikat" value={item.unikat ? 'Tak' : 'Nie'} />
+        {flagi.length > 0 && (
+          <DetailRow label="Cechy" value={flagi.join(', ')} />
         )}
         <DetailRow label="Do kupienia" value={item.do_kupienia ? 'Tak' : 'Nie'} />
-        <DetailRow label="Cena zakupu" value={formatWithTotal(item.cena_zakupu)} />
+        <DetailRow label="Cena zakupu" value={formatCenaZakupu()} />
         <DetailRow label="Data zakupu" value={item.data_zakupu} />
         <DetailRow
           label="Wartość aktualna"
