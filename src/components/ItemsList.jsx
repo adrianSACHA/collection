@@ -383,7 +383,7 @@ export default function ItemsList({
                                                   </p>
                                                 </div>
 
-                                                <div className="ml-4 flex flex-shrink-0 items-center gap-2 text-right">
+                                                <div className="ml-4 flex flex-col flex-shrink-0 items-center gap-2 text-right">
                                                   {item.do_kupienia && (
                                                     <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
                                                       Do kupienia
