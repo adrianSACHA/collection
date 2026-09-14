@@ -161,16 +161,10 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   // Proporcja kadrowania: monety kwadratowe, banknoty 16:9.
   const photoAspect = typ === 'banknot' ? 16 / 9 : 1
 
-  const renderPhotos = () => (
-    <PhotoCapture
-      key={photoCaptureKey}
-      aspect={photoAspect}
-      onPhotosReady={(p) => {
-        setPhotos(p)
-        clearFeedback()
-      }}
-    />
-  )
+  const handlePhotosReady = (p) => {
+    setPhotos(p)
+    clearFeedback()
+  }
 
   return (
     <form onSubmit={(e) => handleSubmit(e, 'default')} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
@@ -530,23 +524,20 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
             )}
           </div>
 
-          {/* Prawa kolumna: zdjęcia (tylko na desktop) */}
-          <div className="hidden lg:flex lg:flex-col lg:gap-4">
-            <div className="sticky top-8">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Zdjęcia (opcjonalne)
-              </label>
-              {renderPhotos()}
-            </div>
-          </div>
+          {/* Prawa kolumna: na desktopie trzyma pola zaawansowane mogłyby być tu;
+              zdjęcia renderujemy raz, poniżej siatki. */}
         </div>
 
-        {/* Zdjęcia na mobile (poniżej danych) */}
-        <div className="mt-6 space-y-3 lg:hidden">
+        {/* Zdjęcia (opcjonalne) - jedna instancja, responsywna */}
+        <div className="mt-6 space-y-3">
           <label className="block text-sm font-medium text-gray-700">
             Zdjęcia (opcjonalne)
           </label>
-          {renderPhotos()}
+          <PhotoCapture
+            key={photoCaptureKey}
+            aspect={photoAspect}
+            onPhotosReady={handlePhotosReady}
+          />
         </div>
 
         {/* Feedback i przyciski */}

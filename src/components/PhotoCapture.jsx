@@ -16,7 +16,11 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
   }
 
   const handlePhoto = (e, side) => {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
+    // Reset wartości inputa, żeby kolejny wybór (nawet tego samego pliku)
+    // zawsze odpalał onChange - na mobile bywa to źródłem "braku reakcji".
+    e.target.value = ''
+
     if (!file) return
 
     const previewUrl = URL.createObjectURL(file)
@@ -111,8 +115,10 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
       <div className="relative aspect-[4/3] overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-100">
         {currentPhoto ? (
           <img
+            key={currentPhoto.previewUrl}
             src={currentPhoto.previewUrl}
             alt={activeSide === 'awers' ? 'Awers' : 'Rewers'}
+            decoding="async"
             className="h-full w-full object-cover"
           />
         ) : (
