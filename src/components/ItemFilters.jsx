@@ -13,7 +13,6 @@ import {
   getDefaultFilters,
   applyFiltersToQuery,
   getSortOption,
-  attachStanyLabels,
 } from '../lib/itemFilters'
 import { useFilterOptions } from './item-filters/useFilterOptions'
 import FilterChips from './item-filters/FilterChips'
@@ -34,9 +33,11 @@ const ItemFilters = forwardRef(function ItemFilters(
   // Gdy przekazano onClose, komponent działa jako panel w modalu (mobile):
   // pokazuje przycisk ✕, tytuł "Filtry i sortowanie" i zamyka się po Zastosuj.
   const isModal = Boolean(onClose)
+  const [search, setSearch] = useState('')
   const [nominal, setNominal] = useState('')
   const [kraj, setKraj] = useState('')
-  const [rok, setRok] = useState('')
+  const [dataOd, setDataOd] = useState('')
+  const [dataDo, setDataDo] = useState('')
   const [typ, setTyp] = useState(fixedType || 'wszystkie')
   const [znakWodny, setZnakWodny] = useState('')
   const [mennica, setMennica] = useState('')
@@ -49,14 +50,9 @@ const ItemFilters = forwardRef(function ItemFilters(
   const [currentPage, setCurrentPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
 
-  const {
-    stanyZachowania: stanyZachowaniList,
-    mennicaOptions,
-    materialOptions,
-    error: optionsError,
-  } = useFilterOptions()
+  const { mennicaOptions, materialOptions } = useFilterOptions()
 
-  const error = queryError || optionsError
+  const error = queryError
 
   const filtersStateRef = useRef(getDefaultFilters(fixedType))
 
@@ -64,9 +60,11 @@ const ItemFilters = forwardRef(function ItemFilters(
 
   useEffect(() => {
     filtersStateRef.current = {
+      search,
       nominal,
       kraj,
-      rok,
+      dataOd,
+      dataDo,
       typ: fixedType || typ,
       znakWodny,
       mennica,
@@ -77,9 +75,11 @@ const ItemFilters = forwardRef(function ItemFilters(
     onFilterStateChange?.(filtersStateRef.current)
   }, [
     fixedType,
+    search,
     nominal,
     kraj,
-    rok,
+    dataOd,
+    dataDo,
     typ,
     znakWodny,
     mennica,
@@ -124,16 +124,16 @@ const ItemFilters = forwardRef(function ItemFilters(
 
         if (err) throw err
 
-        const withLabels = attachStanyLabels(data || [], stanyZachowaniList)
+        const items = data || []
 
         const total = count || 0
-        const loaded = start + withLabels.length
+        const loaded = start + items.length
         const nextHasMore = loaded < total
 
         setCurrentPage(page)
         setHasMore(nextHasMore)
 
-        onResults?.(withLabels, { append })
+        onResults?.(items, { append })
 
         onPaginationChange?.({
           total,
@@ -161,15 +161,17 @@ const ItemFilters = forwardRef(function ItemFilters(
         onLoading?.(false)
       }
     },
-    [onLoading, onPaginationChange, onResults, stanyZachowaniList]
+    [onLoading, onPaginationChange, onResults]
   )
 
   useEffect(() => {
     const initialFilters = getDefaultFilters(fixedType)
 
+    setSearch('')
     setNominal('')
     setKraj('')
-    setRok('')
+    setDataOd('')
+    setDataDo('')
     setTyp(initialFilters.typ)
     setZnakWodny('')
     setMennica('')
@@ -241,9 +243,11 @@ const ItemFilters = forwardRef(function ItemFilters(
   const handleClear = () => {
     const clearedFilters = getDefaultFilters(fixedType)
 
+    setSearch('')
     setNominal('')
     setKraj('')
-    setRok('')
+    setDataOd('')
+    setDataDo('')
     setTyp(clearedFilters.typ)
     setZnakWodny('')
     setMennica('')
@@ -262,6 +266,11 @@ const ItemFilters = forwardRef(function ItemFilters(
 
   // Chipsy aktywnych filtrów (bez sortowania i typu narzuconego zakładką).
   const activeChips = [
+    search.trim() && {
+      key: 'search',
+      label: `Szukaj: ${search.trim()}`,
+      onClear: () => setSearch(''),
+    },
     nominal.trim() && {
       key: 'nominal',
       label: `Nominał: ${nominal.trim()}`,
@@ -269,13 +278,18 @@ const ItemFilters = forwardRef(function ItemFilters(
     },
     kraj.trim() && {
       key: 'kraj',
-      label: `Kraj: ${kraj.trim()}`,
+      label: `Emitent: ${kraj.trim()}`,
       onClear: () => setKraj(''),
     },
-    rok.trim() && {
-      key: 'rok',
-      label: `Rok: ${rok.trim()}`,
-      onClear: () => setRok(''),
+    dataOd.trim() && {
+      key: 'dataOd',
+      label: `Data od: ${dataOd}`,
+      onClear: () => setDataOd(''),
+    },
+    dataDo.trim() && {
+      key: 'dataDo',
+      label: `Data do: ${dataDo}`,
+      onClear: () => setDataDo(''),
     },
     znakWodny.trim() && {
       key: 'znakWodny',
@@ -350,6 +364,29 @@ const ItemFilters = forwardRef(function ItemFilters(
 
         <div>
           <label
+            htmlFor="filter-search"
+            className="mb-1 block text-sm font-medium text-gray-700"
+          >
+            Szukaj
+          </label>
+
+          <input
+            id="filter-search"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="np. 100 zł, Anglica, Londyn…"
+            className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+          />
+
+          <p className="mt-1 text-xs text-gray-500">
+            Przeszukuje kraj, nominał, mennicę, materiał, uwagi i pozostałe pola
+            tekstowe.
+          </p>
+        </div>
+
+        <div>
+          <label
             htmlFor="filter-nominal"
             className="mb-1 block text-sm font-medium text-gray-700"
           >
@@ -371,7 +408,7 @@ const ItemFilters = forwardRef(function ItemFilters(
             htmlFor="filter-kraj"
             className="mb-1 block text-sm font-medium text-gray-700"
           >
-            Kraj
+            Emitent
           </label>
 
           <input
@@ -400,22 +437,42 @@ const ItemFilters = forwardRef(function ItemFilters(
           isModal || isExpanded ? 'block' : 'hidden'
         } lg:block`}
       >
-        <div>
-          <label
-            htmlFor="filter-rok"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            Data emisji (rok)
-          </label>
+        {/* Data emisji od-do: pionowo, żeby zmieściło się na wąskim sidebarze
+            (natywny input[type=date] ma minimalną szerokość). */}
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor="filter-data-od"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
+              Data emisji od
+            </label>
 
-          <input
-            id="filter-rok"
-            type="number"
-            value={rok}
-            onChange={(event) => setRok(event.target.value)}
-            placeholder="np. 2023"
-            className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-          />
+            <input
+              id="filter-data-od"
+              type="date"
+              value={dataOd}
+              onChange={(event) => setDataOd(event.target.value)}
+              className="block min-h-[40px] w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="filter-data-do"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
+              Data emisji do
+            </label>
+
+            <input
+              id="filter-data-do"
+              type="date"
+              value={dataDo}
+              onChange={(event) => setDataDo(event.target.value)}
+              className="block min-h-[40px] w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            />
+          </div>
         </div>
 
         {!fixedType && (

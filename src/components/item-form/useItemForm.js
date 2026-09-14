@@ -18,7 +18,6 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
   const isEditMode = !!itemId
 
   const [values, setValues] = useState(() => getEmptyFormState(fixedType))
-  const [stanyZachowaniList, setStanyZachowaniList] = useState([])
 
   const [awersFile, setAwersFile] = useState(null)
   const [rewersFile, setRewersFile] = useState(null)
@@ -52,20 +51,6 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
       if (name === 'rok' || name === 'data_wydania') next.date_required = ''
       return next
     })
-  }, [])
-
-  const loadStanyZachowania = useCallback(async () => {
-    try {
-      const { data, error: err } = await supabase
-        .from('stany_zachowania')
-        .select('kod, etykieta')
-        .order('kolejnosc', { ascending: true })
-      if (err) throw err
-      setStanyZachowaniList(data || [])
-    } catch (err) {
-      console.error('Błąd wczytywania stanów zachowania:', err)
-      setError('Nie udało się wczytać stanów zachowania.')
-    }
   }, [])
 
   const loadPhotos = useCallback(
@@ -109,11 +94,6 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
       setLoading(false)
     }
   }, [itemId])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadStanyZachowania()
-  }, [loadStanyZachowania])
 
   useEffect(() => {
     if (isEditMode && itemId) {
@@ -283,7 +263,6 @@ export function useItemForm({ itemId, duplicateFrom, fixedType, onSaved }) {
     values,
     setField,
     nominalInputRef,
-    stanyZachowaniList,
     loading,
     savingMode,
     error,

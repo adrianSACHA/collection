@@ -1,5 +1,5 @@
 import { useItemForm } from './item-form/useItemForm'
-import { inputClass, PHOTO_INPUT_CLASS } from './item-form/formHelpers'
+import { inputClass } from './item-form/formHelpers'
 import FormField from './item-form/FormField'
 import PhotoPicker from './item-form/PhotoPicker'
 
@@ -303,19 +303,8 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
 
                                                 {effectiveTyp === 'banknot' && (
                                                     <>
-                                                        <div className="flex gap-3">
-                                                            <FormField label="KN-seria" htmlFor="seria" className="flex-1">
-                                                                <input
-                                                                    id="seria"
-                                                                    type="text"
-                                                                    value={v.seria}
-                                                                    onChange={(e) => setField('seria', e.target.value)}
-                                                                    placeholder="np. AA 1234567"
-                                                                    className={`${inputClass} border-gray-300`}
-                                                                />
-                                                            </FormField>
-
-                                                            <FormField label="Udr.-Bst." htmlFor="nadruk" className="flex-1">
+                                                                                                                <div className="flex gap-3">
+                                                            <FormField label="Udr.-BST." htmlFor="nadruk" className="flex-1">
                                                                 <input
                                                                     id="nadruk"
                                                                     type="text"
@@ -326,7 +315,7 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                                                 />
                                                             </FormField>
 
-                                                            <FormField label="FZ-kod drukarni" htmlFor="kod_drukarni" className="flex-1">
+                                                            <FormField label="FZ" htmlFor="kod_drukarni" className="flex-1">
                                                                 <input
                                                                     id="kod_drukarni"
                                                                     type="text"
@@ -335,6 +324,27 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                                                     placeholder="np. WZP"
                                                                     className={`${inputClass} border-gray-300`}
                                                                 />
+                                                            </FormField>
+
+                                                            <FormField label="KN" htmlFor="seria" className="flex-1">
+                                                                <input
+                                                                    id="seria"
+                                                                    type="text"
+                                                                    value={v.seria}
+                                                                    onChange={(e) => setField('seria', e.target.value)}
+                                                                    placeholder="np. AA 1234567"
+                                                                    className={`${inputClass} border-gray-300`}
+                                                                />
+
+                                                                <label className="mt-1 flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={v.gwiazdka}
+                                                                        onChange={(e) => setField('gwiazdka', e.target.checked)}
+                                                                        className="h-4 w-4 rounded border-gray-300"
+                                                                    />
+                                                                    <span>✻ oznacz</span>
+                                                                </label>
                                                             </FormField>
                                                         </div>
 
@@ -411,7 +421,6 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                                         <div key={photoResetKey} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                                 <PhotoPicker
                                     label="Awers"
-                                    className={PHOTO_INPUT_CLASS}
                                     aspect={photoAspect}
                                     existingUrl={existingPhotos.awers}
                                     onChange={setAwersFile}
@@ -420,7 +429,6 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                 />
                                 <PhotoPicker
                                     label="Rewers"
-                                    className={PHOTO_INPUT_CLASS}
                                     aspect={photoAspect}
                                     existingUrl={existingPhotos.rewers}
                                     onChange={setRewersFile}
@@ -430,7 +438,6 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                 {effectiveTyp === 'banknot' && (
                                     <PhotoPicker
                                         label="Znak wodny"
-                                        className={PHOTO_INPUT_CLASS}
                                         aspect={photoAspect}
                                         existingUrl={existingPhotos.znak_wodny}
                                         onChange={setZnakWodnyFile}
@@ -488,4 +495,4 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
             </div>
                 </form>
     )
-}
+} 

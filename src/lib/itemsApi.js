@@ -1,9 +1,5 @@
 import { supabase } from './supabase'
-import {
-  applyFiltersToQuery,
-  getSortOption,
-  attachStanyLabels,
-} from './itemFilters'
+import { applyFiltersToQuery, getSortOption } from './itemFilters'
 
 const PAGE_SIZE = 30
 
@@ -12,19 +8,12 @@ const PAGE_SIZE = 30
 const EXPORT_CHUNK_SIZE = 1000
 
 /**
-  * Pobiera CAŁY zbiór spełniający filtry (bez paginacji), z etykietami stanów
- * zachowania. Używane przez eksport CSV, żeby obejmować wszystkie rekordy,
+ * Pobiera CAŁY zbiór spełniający filtry (bez paginacji).
+ * Używane przez eksport CSV, żeby obejmować wszystkie rekordy,
  * a nie tylko wczytane strony listy.
  */
 export async function fetchAllItemsForExport(filters) {
   const sortOption = getSortOption(filters?.sortBy)
-
-  // Słownik stanów zachowania - potrzebny do zmapowania etykiet w CSV.
-  const { data: stanyData, error: stanyError } = await supabase
-    .from('stany_zachowania')
-    .select('kod, etykieta, opis')
-
-  if (stanyError) throw stanyError
 
   const all = []
   let offset = 0
@@ -48,11 +37,11 @@ export async function fetchAllItemsForExport(filters) {
     const rows = data || []
     all.push(...rows)
 
-    if (rows.length < EXPORT_CHUNK_SIZE) break
+        if (rows.length < EXPORT_CHUNK_SIZE) break
     offset += EXPORT_CHUNK_SIZE
   }
 
-  return attachStanyLabels(all, stanyData)
+  return all
 }
 
 /**

@@ -12,12 +12,20 @@ import { useEffect, useRef } from 'react'
 export default function FilterModal({ isOpen, onClose, children }) {
   const dialogRef = useRef(null)
 
-  // Escape zamyka + blokada scrolla tła.
+  // Trzymamy onClose w ref, żeby efekt zależał TYLKO od isOpen.
+  // Inaczej (przy nowej referencji onClose co render) efekt odpalałby się
+  // przy każdym wpisaniu znaku i przenosił focus do dialogu, zamykając
+  // klawiaturę na telefonie.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
   useEffect(() => {
     if (!isOpen) return
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose?.()
+      if (event.key === 'Escape') onCloseRef.current?.()
     }
 
     document.addEventListener('keydown', handleKeyDown)
@@ -25,14 +33,14 @@ export default function FilterModal({ isOpen, onClose, children }) {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    // Przenieś focus do dialogu (dostępność).
+    // Focus do dialogu TYLKO przy otwarciu modala.
     dialogRef.current?.focus()
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = previousOverflow
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 

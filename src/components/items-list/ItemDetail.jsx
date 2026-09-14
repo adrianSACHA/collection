@@ -99,17 +99,18 @@ export default function ItemDetail({
             onClick={() =>
               setLightbox({ url: safePhotos.znak_wodny, label: 'Znak wodny' })
             }
-            className="flex-shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            className="flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           >
             <img
               src={safePhotos.znak_wodny}
               alt="Znak wodny"
-              className="h-16 w-16 cursor-zoom-in rounded-lg border border-gray-200 bg-gray-100 object-contain"
+              className="h-24 w-24 cursor-zoom-in object-contain"
             />
+            <p className="py-1 text-center text-xs text-gray-500">Znak wodny</p>
           </button>
-          <span className="text-xs text-gray-500">
-            {item.znak_wodny ? `Znak wodny – ${item.znak_wodny}` : 'Znak wodny'}
-          </span>
+          {item.znak_wodny && (
+            <span className="text-xs text-gray-500">{item.znak_wodny}</span>
+          )}
         </div>
       )}
 
@@ -122,13 +123,17 @@ export default function ItemDetail({
           label={isBanknote ? 'Data emisji' : 'Data wydania'}
           value={item.data_wydania}
         />
-        <DetailRow label="KN-seria" value={item.seria} />
-        <DetailRow label="Udr.-Bst." value={item.nadruk} />
-        <DetailRow label="FZ-kod drukarni" value={item.kod_drukarni} />
+        <DetailRow label="Udr.-BST." value={item.nadruk} />
+        <DetailRow label="FZ" value={item.kod_drukarni} />
         <DetailRow
-          label="Znak wodny"
-          value={item.znak_wodny ? `Znak wodny – ${item.znak_wodny}` : null}
+          label={item.gwiazdka ? '✻ KN' : 'KN'}
+          value={item.seria}
         />
+        {/* Opis znaku wodnego pokazujemy w szczegółach tylko, gdy nie ma zdjęcia
+            (w przeciwnym razie byłby zdublowany - opis jest już przy miniaturze). */}
+        {!safePhotos.znak_wodny && (
+          <DetailRow label="Znak wodny" value={item.znak_wodny} />
+        )}
         <DetailRow label="Wariant" value={item.wariant} />
         {isCoin && (
           <>
@@ -148,7 +153,7 @@ export default function ItemDetail({
         {flagi.length > 0 && (
           <DetailRow label="Cechy" value={flagi.join(', ')} />
         )}
-        <DetailRow label="Do kupienia" value={item.do_kupienia ? 'Tak' : 'Nie'} />
+        <DetailRow label="Do kupienia" value={item.do_kupienia ? 'Tak' : null} />
         <DetailRow label="Cena zakupu" value={formatCenaZakupu()} />
         <DetailRow label="Data zakupu" value={item.data_zakupu} />
         <DetailRow

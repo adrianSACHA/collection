@@ -28,6 +28,18 @@ export const SORT_OPTIONS = [
     ascending: true,
   },
   {
+    value: 'data_desc',
+    label: 'Data emisji: najnowsza → najstarsza',
+    column: 'data_wydania',
+    ascending: false,
+  },
+  {
+    value: 'data_asc',
+    label: 'Data emisji: najstarsza → najnowsza',
+    column: 'data_wydania',
+    ascending: true,
+  },
+  {
     value: 'cena_asc',
     label: 'Cena zakupu: rosnąco',
     column: 'cena_zakupu',
@@ -55,9 +67,11 @@ export const DEFAULT_SORT = 'created_desc'
  */
 export function getDefaultFilters(fixedType) {
   return {
+    search: '',
     nominal: '',
     kraj: '',
-    rok: '',
+    dataOd: '',
+    dataDo: '',
     typ: fixedType || 'wszystkie',
     znakWodny: '',
     mennica: '',
@@ -66,11 +80,47 @@ export function getDefaultFilters(fixedType) {
   }
 }
 
+// Kolumny tekstowe przeszukiwane przez globalne pole "Szukaj".
+const SEARCH_COLUMNS = [
+  'kraj',
+  'nominal',
+  'mennica',
+  'material',
+  'uwagi',
+  'seria',
+  'nadruk',
+  'znak_wodny',
+  'miasto_wydania',
+]
+
+/**
+ * Buduje warunek OR dla pola "Szukaj" (PostgREST `.or(...)`).
+ * Szuka frazy we wszystkich kolumnach tekstowych, a gdy wpisano
+ * samą liczbę - dodatkowo po dokładnym roku. Zwraca null, gdy brak frazy.
+ */
+export function buildSearchCondition(search) {
+  const term = search?.trim()
+  if (!term) return null
+
+  const conditions = SEARCH_COLUMNS.map((col) => `${col}.ilike.%${term}%`)
+
+  if (/^\d+$/.test(term)) {
+    conditions.push(`rok.eq.${term}`)
+  }
+
+  return conditions.join(',')
+}
+
 /**
  * Nakłada wartości filtrów na zapytanie Supabase (bez paginacji/sortowania).
  * `filters` to obiekt w formacie z getDefaultFilters.
  */
 export function applyFiltersToQuery(query, filters) {
+  const searchCondition = buildSearchCondition(filters.search)
+  if (searchCondition) {
+    query = query.or(searchCondition)
+  }
+
   if (filters.nominal?.trim()) {
     query = query.ilike('nominal', `%${filters.nominal.trim()}%`)
   }
@@ -79,11 +129,12 @@ export function applyFiltersToQuery(query, filters) {
     query = query.ilike('kraj', `%${filters.kraj.trim()}%`)
   }
 
-  if (filters.rok?.trim()) {
-    const rokNum = parseInt(filters.rok, 10)
-    if (!Number.isNaN(rokNum)) {
-      query = query.eq('rok', rokNum)
-    }
+  if (filters.dataOd?.trim()) {
+    query = query.gte('data_wydania', filters.dataOd.trim())
+  }
+
+  if (filters.dataDo?.trim()) {
+    query = query.lte('data_wydania', filters.dataDo.trim())
   }
 
   if (filters.typ && filters.typ !== 'wszystkie') {
@@ -112,27 +163,4 @@ export function getSortOption(sortBy) {
   return (
     SORT_OPTIONS.find((option) => option.value === sortBy) || SORT_OPTIONS[0]
   )
-}
-
-/**
- * Dokleja etykietę/opis stanu zachowania do listy przedmiotów.
- * `stanyList` to rekordy { kod, etykieta, opis }.
- */
-export function attachStanyLabels(items, stanyList) {
-  const stanyMap = {}
-  for (const stan of stanyList || []) {
-    stanyMap[stan.kod] = stan
-  }
-
-  return (items || []).map((item) => {
-    const stanInfo = item.stan_zachowania
-      ? stanyMap[item.stan_zachowania]
-      : null
-
-    return {
-      ...item,
-      stan_zachowania_etykieta: stanInfo?.etykieta || null,
-      stan_zachowania_opis: stanInfo?.opis || null,
-    }
-  })
 }

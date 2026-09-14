@@ -15,6 +15,7 @@ const QuickAddForm = lazy(() => import('./components/QuickAddForm'))
 
 const VIEW_STORAGE_KEY = 'kolekcja_widok_typ'
 const LAYOUT_STORAGE_KEY = 'kolekcja_widok_layout'
+const SIDEBAR_STORAGE_KEY = 'kolekcja_sidebar_zwiniety'
 
 function getInitialView() {
   if (typeof window === 'undefined') return 'moneta'
@@ -32,6 +33,12 @@ function getInitialLayout() {
   return saved === 'galeria' ? 'galeria' : 'lista'
 }
 
+function getInitialSidebarCollapsed() {
+  if (typeof window === 'undefined') return false
+
+  return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
+}
+
 function App() {
   const [view, setView] = useState(getInitialView)
   const [mode, setMode] = useState('lista')
@@ -45,6 +52,9 @@ function App() {
   const [exportError, setExportError] = useState(null)
   const [isDetailView, setIsDetailView] = useState(false)
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    getInitialSidebarCollapsed
+  )
 
   const [pagination, setPagination] = useState({
     total: 0,
@@ -88,13 +98,17 @@ function App() {
     setPagination(nextPagination)
   }, [])
 
+  const closeMobileFilters = useCallback(() => {
+    setIsMobileFiltersOpen(false)
+  }, [])
+
   // ItemFilters zgłasza aktualny zestaw filtrów - potrzebny do eksportu całości.
   const handleFilterStateChange = useCallback((nextFilters) => {
     setCurrentFilters(nextFilters)
   }, [])
 
   // Eksport CSV: pobiera CAŁY zbiór spełniający bieżące filtry (nie tylko
-  // wczytane strony listy), mapuje etykiety stanów i pobiera plik.
+  // wczytane strony listy) i pobiera plik.
   const handleExportAll = useCallback(async () => {
     if (!currentFilters || isExporting) return
 
@@ -150,6 +164,14 @@ function App() {
     window.localStorage.setItem(LAYOUT_STORAGE_KEY, nextLayout)
   }
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((collapsed) => {
+      const next = !collapsed
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next))
+      return next
+    })
+  }
+
  const loadMore = () => {
   desktopFiltersRef.current?.loadMore()
 }
@@ -188,9 +210,28 @@ function App() {
           </button>
         </div>
 
-        {/* Sidebar. Ukrycie Tailwindem nie odmontowuje ItemFilters. */}
-        <aside className="hidden lg:flex lg:w-80 lg:flex-col lg:border-r lg:bg-white lg:shadow-sm">
-          <nav className="space-y-1 p-4">
+        {/* Sidebar. Ukrycie Tailwindem nie odmontowuje ItemFilters.
+            Zwijanie (desktop) też nie odmontowuje - <aside> zostaje w DOM,
+            zwężamy go i chowamy zawartość, więc filtry/paginacja dalej działają. */}
+        <aside
+          className={`hidden lg:flex lg:flex-col lg:border-r lg:bg-white lg:shadow-sm lg:transition-[width] lg:duration-200 ${
+            isSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:w-80'
+          }`}
+        >
+          <div className="flex items-center justify-between px-4 pt-4">
+            <span className="text-sm font-semibold text-gray-500">Menu</span>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label={isSidebarCollapsed ? 'Rozwiń panel' : 'Zwiń panel'}
+              title={isSidebarCollapsed ? 'Rozwiń panel' : 'Zwiń panel'}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            >
+              ◀
+            </button>
+          </div>
+
+          <nav className="space-y-1 p-4 pt-2">
             <button
               type="button"
               onClick={() => switchType('moneta')}
@@ -216,17 +257,21 @@ function App() {
             </button>
           </nav>
 
-          {showFilters && (
-            <div className="flex-1 overflow-y-auto px-4 pb-4">
-              <ItemFilters
-                ref={desktopFiltersRef}
-                fixedType={view}
-                onResults={handleResults}
-                onPaginationChange={handlePaginationChange}
-                onFilterStateChange={handleFilterStateChange}
-              />
-            </div>
-          )}
+          {/* Filtry trzymamy ZAWSZE zamontowane (chowamy CSS-em), żeby ich stan
+              nie znikał przy wejściu/wyjściu z detalu. */}
+          <div
+            className={`flex-1 overflow-y-auto px-4 pb-4 ${
+              showFilters ? '' : 'hidden'
+            }`}
+          >
+            <ItemFilters
+              ref={desktopFiltersRef}
+              fixedType={view}
+              onResults={handleResults}
+              onPaginationChange={handlePaginationChange}
+              onFilterStateChange={handleFilterStateChange}
+            />
+          </div>
 
           {showFilters && canExport && (
             <div className="space-y-1 px-4 pb-2">
@@ -256,6 +301,19 @@ function App() {
           </button>
         </aside>
 
+        {/* Uchwyt do rozwijania zwiniętego sidebara (tylko desktop) */}
+        {isSidebarCollapsed && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Rozwiń panel"
+            title="Rozwiń panel"
+            className="fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-lg border border-l-0 border-gray-300 bg-white px-1.5 py-6 text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-700 lg:block"
+          >
+            ▶
+          </button>
+        )}
+
         <main className="flex-1 lg:overflow-auto">
           {mode === 'lista' ? (
             <div className="space-y-4 p-4 lg:p-6">
@@ -272,14 +330,14 @@ function App() {
 
                   <FilterModal
                     isOpen={isMobileFiltersOpen}
-                    onClose={() => setIsMobileFiltersOpen(false)}
+                    onClose={closeMobileFilters}
                   >
                     <ItemFilters
                       fixedType={view}
                       onResults={handleResults}
                       onPaginationChange={handlePaginationChange}
                       onFilterStateChange={handleFilterStateChange}
-                      onClose={() => setIsMobileFiltersOpen(false)}
+                      onClose={closeMobileFilters}
                     />
                   </FilterModal>
                 </div>

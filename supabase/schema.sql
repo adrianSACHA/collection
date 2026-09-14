@@ -13,14 +13,14 @@ create table if not exists items (
   rok integer,
   data_wydania date,
   -- pola wspólne
-    stan_zachowania text,
     wariant text,
     ilosc integer default 1,
     unikat boolean default false,
     do_kupienia boolean default false,
-    unc boolean default false,
+        unc boolean default false,
     bardzo_rzadki boolean default false,
     rzadki boolean default false,
+    gwiazdka boolean default false,
     uwagi text,
   -- monety
   naklad text,
@@ -53,14 +53,6 @@ create table if not exists item_photos (
   typ text check (typ in ('awers','rewers','znak_wodny')),
   url text not null,
   created_at timestamp with time zone default now()
-);
-
--- Słownik stanów zachowania (dla formularzy i filtrów)
-create table if not exists stany_zachowania (
-  kod text primary key,
-  etykieta text not null,
-  opis text,
-  kolejnosc integer default 0
 );
 
 -- Indeksy dla wydajności

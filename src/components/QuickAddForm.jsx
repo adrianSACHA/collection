@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import PhotoCapture from './PhotoCapture'
 import FormField from './item-form/FormField'
@@ -12,12 +12,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   const [nominal, setNominal] = useState('')
   const [rok, setRok] = useState('')
   const [dataWydania, setDataWydania] = useState('')
-  const [wariant, setWariant] = useState('')
-  const [ilosc, setIlosc] = useState('1')
-  const [mennica, setMennica] = useState('')
-  const [material, setMaterial] = useState('')
-  const [wagaG, setWagaG] = useState('')
-  const [srednicaMm, setSrednicaMm] = useState('')
   const [unikat, setUnikat] = useState(false)
   const [unc, setUnc] = useState(false)
   const [bardzoRzadki, setBardzoRzadki] = useState(false)
@@ -25,15 +19,10 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   const [doKupienia, setDoKupienia] = useState(false)
   const [cenaZakupu, setCenaZakupu] = useState('')
   const [cenaZakupuDo, setCenaZakupuDo] = useState('')
-  const [dataZakupu, setDataZakupu] = useState('')
-  const [sprzedawca, setSprzedawca] = useState('')
-  const [wartoscAktualna, setWartoscAktualna] = useState('')
-  const [lokalizacja, setLokalizacja] = useState('')
   const [uwagi, setUwagi] = useState('')
   const [photos, setPhotos] = useState(null)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [photoCaptureKey, setPhotoCaptureKey] = useState(0)
   const [savingMode, setSavingMode] = useState(null) // 'default' | 'addAnother'
 
@@ -53,12 +42,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setNominal('')
     setRok('')
     setDataWydania('')
-    setWariant('')
-    setIlosc('1')
-    setMennica('')
-    setMaterial('')
-    setWagaG('')
-    setSrednicaMm('')
     setUnikat(false)
     setUnc(false)
     setBardzoRzadki(false)
@@ -66,10 +49,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setDoKupienia(false)
     setCenaZakupu('')
     setCenaZakupuDo('')
-    setDataZakupu('')
-    setSprzedawca('')
-    setWartoscAktualna('')
-    setLokalizacja('')
     setUwagi('')
     setPhotos(null)
     setPhotoCaptureKey((k) => k + 1)
@@ -129,12 +108,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         nominal: nominal.trim(),
         rok: rok ? parseInt(rok, 10) : null,
         data_wydania: dataWydania || null,
-        wariant: wariant.trim() || null,
-        ilosc: ilosc ? parseInt(ilosc, 10) : 1,
-        mennica: mennica.trim() || null,
-        material: material.trim() || null,
-        waga_g: wagaG ? parseFloat(wagaG) : null,
-        srednica_mm: srednicaMm ? parseFloat(srednicaMm) : null,
         unikat,
         unc,
         bardzo_rzadki: bardzoRzadki,
@@ -142,10 +115,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         do_kupienia: doKupienia,
         cena_zakupu: cenaZakupu ? parseFloat(cenaZakupu) : null,
         cena_zakupu_do: cenaZakupuDo ? parseFloat(cenaZakupuDo) : null,
-        data_zakupu: dataZakupu || null,
-        sprzedawca: sprzedawca.trim() || null,
-        wartosc_aktualna: wartoscAktualna ? parseFloat(wartoscAktualna) : null,
-        lokalizacja: lokalizacja.trim() || null,
         uwagi: uwagi.trim() || null,
       },
     })
@@ -377,151 +346,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                 className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
               />
             </FormField>
-
-            {/* Przycisk dla pól zaawansowanych */}
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full py-2 text-sm font-medium text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-            >
-              {showAdvanced ? '− Ukryj dodatkowe pola' : '+ Pokaż dodatkowe pola'}
-            </button>
-
-            {/* Pola zaawansowane */}
-            {showAdvanced && (
-              <div className="space-y-3 rounded-lg bg-gray-100 p-3 lg:bg-white">
-                <FormField label="Wariant" htmlFor="wariant">
-                  <input
-                    id="wariant"
-                    type="text"
-                    value={wariant}
-                    onChange={(e) => setWariant(e.target.value)}
-                    placeholder="np. odmiana stempla"
-                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                  />
-                </FormField>
-
-                <FormField label="Ilość" htmlFor="ilosc">
-                  <input
-                    id="ilosc"
-                    type="number"
-                    min="1"
-                    value={ilosc}
-                    onChange={(e) => setIlosc(e.target.value)}
-                    placeholder="1"
-                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                  />
-                </FormField>
-
-                {typ === 'moneta' && (
-                  <>
-                    <div className="flex gap-3">
-                      <FormField label="Mennica" htmlFor="mennica" className="flex-1">
-                        <input
-                          id="mennica"
-                          type="text"
-                          value={mennica}
-                          onChange={(e) => setMennica(e.target.value)}
-                          placeholder="np. Warszawa (MW)"
-                          className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                        />
-                      </FormField>
-
-                      <FormField label="Materiał / stop" htmlFor="material" className="flex-1">
-                        <input
-                          id="material"
-                          type="text"
-                          value={material}
-                          onChange={(e) => setMaterial(e.target.value)}
-                          placeholder="np. Cu-Ni, Ag 925"
-                          className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                        />
-                      </FormField>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <FormField label="Waga (g)" htmlFor="waga" className="flex-1">
-                        <input
-                          id="waga"
-                          type="number"
-                          step="0.01"
-                          value={wagaG}
-                          onChange={(e) => setWagaG(e.target.value)}
-                          placeholder="np. 5.00"
-                          className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                        />
-                      </FormField>
-
-                      <FormField label="Średnica (mm)" htmlFor="srednica" className="flex-1">
-                        <input
-                          id="srednica"
-                          type="number"
-                          step="0.01"
-                          value={srednicaMm}
-                          onChange={(e) => setSrednicaMm(e.target.value)}
-                          placeholder="np. 24.00"
-                          className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                        />
-                      </FormField>
-                    </div>
-                  </>
-                )}
-
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={unikat}
-                    onChange={(e) => setUnikat(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">To unikat</span>
-                </label>
-
-                <FormField label="Data zakupu" htmlFor="data-zakupu">
-                  <input
-                    id="data-zakupu"
-                    type="date"
-                    value={dataZakupu}
-                    onChange={(e) => setDataZakupu(e.target.value)}
-                    className={`${inputClass} border-gray-300 text-gray-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                  />
-                </FormField>
-
-                <FormField label="Sprzedawca" htmlFor="sprzedawca">
-                  <input
-                    id="sprzedawca"
-                    type="text"
-                    value={sprzedawca}
-                    onChange={(e) => setSprzedawca(e.target.value)}
-                    placeholder="np. nazwa sklepu / użytkownika"
-                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                  />
-                </FormField>
-
-                <FormField label="Wartość aktualna (PLN)" htmlFor="wartosc-aktualna">
-                  <input
-                    id="wartosc-aktualna"
-                    type="number"
-                    step="0.01"
-                    value={wartoscAktualna}
-                    onChange={(e) => setWartoscAktualna(e.target.value)}
-                    placeholder="np. 35.00"
-                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                  />
-                </FormField>
-
-                <FormField label="Lokalizacja" htmlFor="lokalizacja">
-                  <input
-                    id="lokalizacja"
-                    type="text"
-                    value={lokalizacja}
-                    onChange={(e) => setLokalizacja(e.target.value)}
-                    placeholder="np. album 2, str. 14"
-                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
-                  />
-                </FormField>
-              </div>
-            )}
           </div>
 
           {/* Prawa kolumna: na desktopie trzyma pola zaawansowane mogłyby być tu;

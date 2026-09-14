@@ -4,7 +4,6 @@ import CropModal from './CropModal'
 
 export default function PhotoPicker({
   label,
-  className = '',
   aspect,
   existingUrl,
   onChange,
@@ -80,7 +79,7 @@ export default function PhotoPicker({
   const showCrop = Boolean(originalUrl)
 
   return (
-    <div className={className}>
+    <div>
       <label className="mb-1 block text-sm font-medium text-gray-700">
         {label}
       </label>
@@ -129,12 +128,40 @@ export default function PhotoPicker({
       )}
 
       <input
+        id={`photo-input-${label}`}
         type="file"
         accept="image/*"
         capture="environment"
         onChange={handleFileChange}
-        className="w-full text-sm"
+        className="sr-only"
       />
+
+      <label
+        htmlFor={`photo-input-${label}`}
+        className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus-within:ring-4 focus-within:ring-blue-300"
+      >
+        <svg
+          aria-hidden="true"
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
+        {displayUrl ? 'Zmień zdjęcie' : 'Wybierz zdjęcie'}
+      </label>
 
       {isCropping && originalUrl && (
         <CropModal
