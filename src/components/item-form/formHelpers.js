@@ -36,6 +36,7 @@ export function buildPayload(values, effectiveTyp) {
   if (effectiveTyp === 'banknot') {
     payload.miasto_wydania = values.miasto_wydania.trim() || null
     payload.seria = values.seria.trim() || null
+    payload.kn_seria = values.kn_seria.trim() || null
     payload.nadruk = values.nadruk.trim() || null
     payload.kod_drukarni = values.kod_drukarni.trim() || null
     payload.znak_wodny = values.znak_wodny.trim() || null
@@ -44,6 +45,7 @@ export function buildPayload(values, effectiveTyp) {
   } else {
     payload.miasto_wydania = null
     payload.seria = null
+    payload.kn_seria = null
     payload.nadruk = null
     payload.kod_drukarni = null
     payload.znak_wodny = null
@@ -87,6 +89,7 @@ export function mapItemToFormState(item) {
     data_wydania: item.data_wydania || '',
     miasto_wydania: item.miasto_wydania || '',
     seria: item.seria || '',
+    kn_seria: item.kn_seria || '',
     nadruk: item.nadruk || '',
     kod_drukarni: item.kod_drukarni || '',
     znak_wodny: item.znak_wodny || '',
@@ -122,6 +125,7 @@ export function getEmptyFormState(fixedType) {
     data_wydania: '',
     miasto_wydania: '',
     seria: '',
+    kn_seria: '',
     nadruk: '',
     kod_drukarni: '',
     znak_wodny: '',

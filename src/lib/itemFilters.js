@@ -88,6 +88,7 @@ const SEARCH_COLUMNS = [
   'material',
   'uwagi',
   'seria',
+  'kn_seria',
   'nadruk',
   'znak_wodny',
   'miasto_wydania',

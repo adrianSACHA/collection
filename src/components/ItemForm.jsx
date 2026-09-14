@@ -303,69 +303,80 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
 
                                                 {effectiveTyp === 'banknot' && (
                                                     <>
-                                                                                                                <div className="flex gap-3">
-                                                            <FormField label="Udr.-BST." htmlFor="nadruk" className="flex-1">
-                                                                <input
-                                                                    id="nadruk"
-                                                                    type="text"
-                                                                    value={v.nadruk}
-                                                                    onChange={(e) => setField('nadruk', e.target.value)}
-                                                                    placeholder="opis"
-                                                                    className={`${inputClass} border-gray-300`}
-                                                                />
-                                                            </FormField>
+                                                                                                                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                                                                                                                    <FormField label="Udr.-BST." htmlFor="nadruk">
+                                                                                                                        <input
+                                                                                                                            id="nadruk"
+                                                                                                                            type="text"
+                                                                                                                            value={v.nadruk}
+                                                                                                                            onChange={(e) => setField('nadruk', e.target.value)}
+                                                                                                                            placeholder="opis"
+                                                                                                                            className={`${inputClass} border-gray-300`}
+                                                                                                                        />
+                                                                                                                    </FormField>
 
-                                                            <FormField label="FZ" htmlFor="kod_drukarni" className="flex-1">
-                                                                <input
-                                                                    id="kod_drukarni"
-                                                                    type="text"
-                                                                    value={v.kod_drukarni}
-                                                                    onChange={(e) => setField('kod_drukarni', e.target.value)}
-                                                                    placeholder="np. WZP"
-                                                                    className={`${inputClass} border-gray-300`}
-                                                                />
-                                                            </FormField>
+                                                                                                                    <FormField label="Seria" htmlFor="seria">
+                                                                                                                        <input
+                                                                                                                            id="seria"
+                                                                                                                            type="text"
+                                                                                                                            value={v.seria}
+                                                                                                                            onChange={(e) => setField('seria', e.target.value)}
+                                                                                                                            placeholder="np. A"
+                                                                                                                            className={`${inputClass} border-gray-300`}
+                                                                                                                        />
+                                                                                                                    </FormField>
 
-                                                                                                                        <FormField label="KN" htmlFor="seria" className="flex-1">
-                                                                <input
-                                                                    id="seria"
-                                                                    type="text"
-                                                                    value={v.seria}
-                                                                    onChange={(e) => setField('seria', e.target.value)}
-                                                                    placeholder="np. AA 1234567"
-                                                                    className={`${inputClass} border-gray-300`}
-                                                                />
+                                                                                                                    <FormField label="FZ" htmlFor="kod_drukarni">
+                                                                                                                        <input
+                                                                                                                            id="kod_drukarni"
+                                                                                                                            type="text"
+                                                                                                                            value={v.kod_drukarni}
+                                                                                                                            onChange={(e) => setField('kod_drukarni', e.target.value)}
+                                                                                                                            placeholder="np. WZP"
+                                                                                                                            className={`${inputClass} border-gray-300`}
+                                                                                                                        />
+                                                                                                                    </FormField>
 
-                                                                {/* Znaczek ✻ przy numerze serii - przed lub za (wykluczają się). */}
-                                                                <div className="mt-1 flex items-center gap-3">
-                                                                    <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={v.gwiazdka_przed}
-                                                                            onChange={(e) => {
-                                                                                setField('gwiazdka_przed', e.target.checked)
-                                                                                if (e.target.checked) setField('gwiazdka_za', false)
-                                                                            }}
-                                                                            className="h-4 w-4 rounded border-gray-300"
-                                                                        />
-                                                                        <span>✻ przed</span>
-                                                                    </label>
+                                                                                                                    <FormField label="KN" htmlFor="kn_seria">
+                                                                                                                        <input
+                                                                                                                            id="kn_seria"
+                                                                                                                            type="text"
+                                                                                                                            value={v.kn_seria}
+                                                                                                                            onChange={(e) => setField('kn_seria', e.target.value)}
+                                                                                                                            placeholder="np. AA 1234567"
+                                                                                                                            className={`${inputClass} border-gray-300`}
+                                                                                                                        />
 
-                                                                    <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={v.gwiazdka_za}
-                                                                            onChange={(e) => {
-                                                                                setField('gwiazdka_za', e.target.checked)
-                                                                                if (e.target.checked) setField('gwiazdka_przed', false)
-                                                                            }}
-                                                                            className="h-4 w-4 rounded border-gray-300"
-                                                                        />
-                                                                        <span>✻ za</span>
-                                                                    </label>
-                                                                </div>
-                                                            </FormField>
-                                                        </div>
+                                                                                                                        {/* Znaczek ✻ przy numerze serii - przed lub za (wykluczają się). */}
+                                                                                                                        <div className="mt-1 flex items-center gap-3">
+                                                                                                                            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
+                                                                                                                                <input
+                                                                                                                                    type="checkbox"
+                                                                                                                                    checked={v.gwiazdka_przed}
+                                                                                                                                    onChange={(e) => {
+                                                                                                                                        setField('gwiazdka_przed', e.target.checked)
+                                                                                                                                        if (e.target.checked) setField('gwiazdka_za', false)
+                                                                                                                                    }}
+                                                                                                                                    className="h-4 w-4 rounded border-gray-300"
+                                                                                                                                />
+                                                                                                                                <span>✻ przed</span>
+                                                                                                                            </label>
+
+                                                                                                                            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
+                                                                                                                                <input
+                                                                                                                                    type="checkbox"
+                                                                                                                                    checked={v.gwiazdka_za}
+                                                                                                                                    onChange={(e) => {
+                                                                                                                                        setField('gwiazdka_za', e.target.checked)
+                                                                                                                                        if (e.target.checked) setField('gwiazdka_przed', false)
+                                                                                                                                    }}
+                                                                                                                                    className="h-4 w-4 rounded border-gray-300"
+                                                                                                                                />
+                                                                                                                                <span>✻ za</span>
+                                                                                                                            </label>
+                                                                                                                        </div>
+                                                                                                                    </FormField>
+                                                                                                                </div>
 
                                                         <FormField label="Znak wodny (opis)" htmlFor="znak_wodny">
                                                             <input

@@ -29,9 +29,10 @@ create table if not exists items (
   material text,
   waga_g numeric,
   srednica_mm numeric,
-  -- banknoty
+    -- banknoty
   miasto_wydania text,
   seria text,
+  kn_seria text,
   nadruk text,
   kod_drukarni text,
   znak_wodny text,

@@ -41,12 +41,12 @@ export default function ItemDetail({
     return `do ${do_} PLN`
   }
 
-  // Numer serii (KN) ze znaczkiem ✻ przed lub za wartością (wykluczają się).
-  const formatSeria = () => {
-    if (!item.seria) return null
-    if (item.gwiazdka_przed) return `✻ ${item.seria}`
-    if (item.gwiazdka_za) return `${item.seria} ✻`
-    return item.seria
+  // Numer KN ze znaczkiem ✻ przed lub za wartością (wykluczają się).
+  const formatKnSeria = () => {
+    if (!item.kn_seria) return null
+    if (item.gwiazdka_przed) return `✻ ${item.kn_seria}`
+    if (item.gwiazdka_za) return `${item.kn_seria} ✻`
+    return item.kn_seria
   }
 
   // Zaznaczone flagi (pokazujemy tylko wybrane, brak = nic się nie pokazuje).
@@ -132,8 +132,9 @@ export default function ItemDetail({
           value={item.data_wydania}
         />
         <DetailRow label="Udr.-BST." value={item.nadruk} />
+        <DetailRow label="Seria" value={item.seria} />
         <DetailRow label="FZ" value={item.kod_drukarni} />
-        <DetailRow label="KN" value={formatSeria()} />
+        <DetailRow label="KN" value={formatKnSeria()} />
         {/* Opis znaku wodnego pokazujemy w szczegółach tylko, gdy nie ma zdjęcia
             (w przeciwnym razie byłby zdublowany - opis jest już przy miniaturze). */}
         {!safePhotos.znak_wodny && (
