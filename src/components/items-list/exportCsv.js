@@ -17,6 +17,7 @@ const CSV_COLUMNS = [
   { key: 'seria', label: 'Seria' },
   { key: 'kod_drukarni', label: 'FZ' },
   { key: 'kn_seria', label: 'KN' },
+  { key: 'seria_litera', label: 'Seria Litera' },
   { key: 'data_wydania', label: 'Data emisji' },
   { key: 'znak_wodny', label: 'Znak wodny' },
   { key: 'unc', label: 'UNC' },
@@ -37,7 +38,7 @@ function escapeCsvValue(value) {
   if (value === null || value === undefined) return ''
   const str = String(value)
   if (/[",\n;]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`
+    return `"${str.replace(/\"/g, '""')}"`
   }
   return str
 }

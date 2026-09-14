@@ -8,16 +8,18 @@ import { exportItemsToCsv } from './items-list/exportCsv'
 
 const ItemForm = lazy(() => import('./ItemForm'))
 
-// Formatuje datę ISO (YYYY-MM-DD) na DD.MM.RRRR.
 function formatDate(iso) {
   if (!iso) return ''
-  const [y, m, d] = iso.split('-')
-  if (!y || !m || !d) return iso
-  return `${d}.${m}.${y}`
+
+  const [year, month, day] = iso.split('-')
+
+  if (!year || !month || !day) return iso
+
+  return `${day}.${month}.${year}`
 }
 
-// Zaznaczone flagi jako tablica (brak = pusto).
-function getFlags(item) {
+// Wszystkie zaznaczone cechy są widoczne w górnym wierszu pozycji.
+function getListBadges(item) {
   return [
     item.unc && 'UNC',
     item.unikat && 'Unikat',
@@ -26,11 +28,58 @@ function getFlags(item) {
   ].filter(Boolean)
 }
 
+// Przykłady:
+// seria=B, kn_seria=12345, gwiazdka_za=true -> "B 12345 ✻"
+// kn_seria=123456, gwiazdka_za=true, koncowka_serii=A -> "123456 ✻ A"
+// kod_drukarni=13, seria=B, kn_seria=123456 -> "13 B 123456"
+function formatBanknoteSeries(item) {
+  const parts = []
+
+  if (item.kod_drukarni?.trim()) {
+    parts.push(item.kod_drukarni.trim())
+  }
+
+  if (item.seria?.trim()) {
+    parts.push(item.seria.trim())
+  }
+
+  if (item.gwiazdka_przed) {
+    parts.push('✻')
+  }
+
+  if (
+    item.kn_seria !== null &&
+    item.kn_seria !== undefined &&
+    String(item.kn_seria).trim()
+  ) {
+    parts.push(String(item.kn_seria).trim())
+  }
+
+  if (item.gwiazdka_za) {
+    parts.push('✻')
+  }
+
+  if (item.koncowka_serii?.trim()) {
+    parts.push(item.koncowka_serii.trim())
+  }
+
+  return parts.join(' ')
+}
+
+// Dla banknotów: miasto wydania · emitent (obecnie pole `kraj`).
+function formatLocation(item) {
+  const parts = [item.miasto_wydania, item.kraj]
+    .filter((value) => value?.trim())
+    .map((value) => value.trim())
+
+  return parts.join(' · ')
+}
+
 export default function ItemsList({
   filteredItems,
   onModeChange,
   pagination,
-    onLoadMore,
+  onLoadMore,
   viewMode = 'lista',
 }) {
   const [selectedItem, setSelectedItem] = useState(null)
@@ -38,23 +87,22 @@ export default function ItemsList({
   const [duplicateItem, setDuplicateItem] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [actionError, setActionError] = useState(null)
-        const [thumbnails, setThumbnails] = useState({})
+  const [thumbnails, setThumbnails] = useState({})
   const [selectedPhotos, setSelectedPhotos] = useState({})
-  // Licznik wymuszający ponowne pobranie miniatur po zapisie (edycja/dodanie).
   const [thumbnailsRefreshKey, setThumbnailsRefreshKey] = useState(0)
 
   const queryClient = useQueryClient()
+  const items = useMemo(() => filteredItems || [], [filteredItems])
+  const totalCount = items.length
 
-    const items = useMemo(() => filteredItems || [], [filteredItems])
-    const totalCount = items.length
-
-    const itemsKey = useMemo(
+  const itemsKey = useMemo(
     () => items.map((item) => item.id).join(','),
     [items]
   )
 
-    useEffect(() => {
+  useEffect(() => {
     if (!itemsKey) {
+      setThumbnails({})
       return
     }
 
@@ -75,14 +123,17 @@ export default function ItemsList({
       const map = {}
 
       for (const row of data || []) {
-        if (!map[row.item_id]) map[row.item_id] = {}
+        if (!map[row.item_id]) {
+          map[row.item_id] = {}
+        }
+
         map[row.item_id][row.typ] = row.url
       }
 
       setThumbnails(map)
-      }
+    }
 
-      loadThumbnails()
+    loadThumbnails()
   }, [itemsKey, thumbnailsRefreshKey])
 
   useEffect(() => {
@@ -95,10 +146,7 @@ export default function ItemsList({
         .eq('item_id', selectedItem.id)
 
       if (error) {
-        console.error(
-          'Błąd wczytywania zdjęć przedmiotu:',
-          error
-        )
+        console.error('Błąd wczytywania zdjęć przedmiotu:', error)
         return
       }
 
@@ -122,21 +170,21 @@ export default function ItemsList({
       setConfirmDelete(false)
       onModeChange?.(false)
     },
-    onError: (err) =>
-      setActionError(
-        err.message || 'Nie udało się usunąć przedmiotu.'
-      ),
+    onError: (error) => {
+      setActionError(error.message || 'Nie udało się usunąć przedmiotu.')
+    },
   })
 
   const openItem = (item) => {
     setSelectedItem(item)
+    setSelectedPhotos({})
     setIsEditing(false)
     setConfirmDelete(false)
     setActionError(null)
     onModeChange?.(true)
   }
 
-    const startEditing = () => {
+  const startEditing = () => {
     setIsEditing(true)
     setActionError(null)
   }
@@ -150,11 +198,11 @@ export default function ItemsList({
     setDuplicateItem(null)
   }
 
-    const handleDuplicated = () => {
+  const handleDuplicated = () => {
     queryClient.invalidateQueries({ queryKey: ['items'] })
     setDuplicateItem(null)
     setSelectedItem(null)
-    setThumbnailsRefreshKey((k) => k + 1)
+    setThumbnailsRefreshKey((key) => key + 1)
     onModeChange?.(false)
   }
 
@@ -165,18 +213,19 @@ export default function ItemsList({
 
   const backToList = () => {
     setSelectedItem(null)
+    setSelectedPhotos({})
     setIsEditing(false)
     onModeChange?.(false)
   }
 
-    const handleSaved = (updatedItem) => {
+  const handleSaved = (updatedItem) => {
     queryClient.invalidateQueries({ queryKey: ['items'] })
     setSelectedItem(updatedItem)
     setIsEditing(false)
-    setThumbnailsRefreshKey((k) => k + 1)
+    setThumbnailsRefreshKey((key) => key + 1)
   }
 
-    if (duplicateItem) {
+  if (duplicateItem) {
     return (
       <Suspense fallback={<LoadingFallback label="Wczytywanie formularza…" />}>
         <ItemForm
@@ -201,7 +250,7 @@ export default function ItemsList({
       )
     }
 
-        return (
+    return (
       <ItemDetail
         item={selectedItem}
         photos={selectedPhotos}
@@ -219,14 +268,14 @@ export default function ItemsList({
 
   return (
     <div className="w-full">
-            <div className="mx-auto max-w-md space-y-3 lg:max-w-6xl">
-                {(filteredItems !== null && items.length > 0) && (
-                  <div className="flex items-center justify-end">
-                    <span className="text-sm text-gray-500">
-                      {pagination?.total ?? totalCount} pozycji
-                    </span>
-                  </div>
-                )}
+      <div className="mx-auto max-w-md space-y-3 lg:max-w-6xl">
+        {filteredItems !== null && items.length > 0 && (
+          <div className="flex items-center justify-end">
+            <span className="text-sm text-gray-500">
+              {pagination?.total ?? totalCount} pozycji
+            </span>
+          </div>
+        )}
 
         {filteredItems === null ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
@@ -240,20 +289,26 @@ export default function ItemsList({
               Brak przedmiotów spełniających kryteria.
             </p>
           </div>
-                ) : (
-                    <>
+        ) : (
+          <>
             {viewMode === 'galeria' ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {items.map((item) => {
                   const isCoin = item.typ === 'moneta'
+                  const banknoteSeries = isCoin
+                    ? ''
+                    : formatBanknoteSeries(item)
+                  const listBadges = getListBadges(item)
+                  const location = formatLocation(item)
 
                   return (
                     <button
                       key={item.id}
+                      type="button"
                       onClick={() => openItem(item)}
                       className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-left transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                     >
-                                                                                        <div className="relative flex h-40 w-full items-center justify-center overflow-hidden bg-gray-100 p-2 lg:h-48">
+                      <div className="relative flex h-40 w-full items-center justify-center overflow-hidden bg-gray-100 p-2 lg:h-48">
                         {(() => {
                           const photos = thumbnails[item.id] || {}
                           const hasAny = photos.awers || photos.rewers
@@ -266,8 +321,6 @@ export default function ItemsList({
                             )
                           }
 
-                          // Zdjęcia ograniczone do rozmiaru kafelka (max-h-full /
-                          // max-w-full), żeby nigdy nie rozpychały grida.
                           return (
                             <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                               {photos.awers && (
@@ -278,6 +331,7 @@ export default function ItemsList({
                                   className="min-h-0 max-h-full min-w-0 max-w-full flex-1 object-contain transition-transform group-hover:scale-105"
                                 />
                               )}
+
                               {photos.rewers && (
                                 <img
                                   src={photos.rewers}
@@ -303,7 +357,7 @@ export default function ItemsList({
                         )}
                       </div>
 
-                                                                                        <div className="flex flex-col gap-0.5 p-2.5">
+                      <div className="flex min-w-0 flex-col gap-0.5 p-2.5">
                         <p className="truncate font-medium text-gray-800">
                           {item.nominal}
                           {isCoin
@@ -314,12 +368,25 @@ export default function ItemsList({
                               ? ` · ${formatDate(item.data_wydania)}`
                               : ''}
                         </p>
-                        <p className="truncate text-xs text-gray-500">
-                          {item.kraj}
-                          {getFlags(item).length > 0
-                            ? ` · ${getFlags(item).join(', ')}`
-                            : ''}
-                        </p>
+
+                        {!isCoin && banknoteSeries && (
+                          <p className="truncate text-xs text-gray-500">
+                            {banknoteSeries}
+                          </p>
+                        )}
+
+                        {location && (
+                          <p className="truncate text-xs text-gray-500">
+                            {location}
+                          </p>
+                        )}
+
+                        {listBadges.length > 0 && (
+                          <p className="truncate text-xs text-gray-500">
+                            {listBadges.join(', ')}
+                          </p>
+                        )}
+
                         {(item.cena_zakupu || item.wartosc_aktualna) && (
                           <p className="mt-auto text-xs font-medium text-gray-700">
                             {item.cena_zakupu || item.wartosc_aktualna} PLN
@@ -334,14 +401,20 @@ export default function ItemsList({
               <div className="divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200 bg-white">
                 {items.map((item) => {
                   const isCoin = item.typ === 'moneta'
+                  const banknoteSeries = isCoin
+                    ? ''
+                    : formatBanknoteSeries(item)
+                  const listBadges = getListBadges(item)
+                  const location = formatLocation(item)
 
                   return (
                     <button
                       key={item.id}
+                      type="button"
                       onClick={() => openItem(item)}
-                      className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
+                      className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
                     >
-                                            <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                         {thumbnails[item.id]?.awers ? (
                           <img
                             src={thumbnails[item.id].awers}
@@ -355,56 +428,74 @@ export default function ItemsList({
                           </div>
                         )}
 
-                                                <div className="min-w-0 flex-1">
-                                                  <p className="font-medium text-gray-800">
-                                                    {item.nominal}
-                                                    {isCoin
-                                                      ? item.rok
-                                                        ? ` · ${item.rok}`
-                                                        : ''
-                                                      : item.data_wydania
-                                                        ? ` · ${formatDate(item.data_wydania)}`
-                                                        : ''}
-                                                    {isCoin && item.naklad
-                                                      ? ` · nakład: ${item.naklad}`
-                                                      : ''}
-                                                  </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 font-medium text-gray-800">
+                            <span>{item.nominal}</span>
 
-                                                  <p className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                                                    <span className="truncate">{item.kraj}</span>
-                                                    {getFlags(item).map((flag) => (
-                                                      <span
-                                                        key={flag}
-                                                        className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
-                                                      >
-                                                        {flag}
-                                                      </span>
-                                                    ))}
-                                                  </p>
-                                                </div>
+                            {isCoin ? (
+                              <>
+                                {item.rok && <span>· {item.rok}</span>}
 
-                                                <div className="ml-4 flex flex-col flex-shrink-0 items-center gap-2 text-right">
-                                                  {item.do_kupienia && (
-                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-                                                      Do kupienia
-                                                    </span>
-                                                  )}
+                                {item.naklad && (
+                                  <span className="text-sm font-normal text-gray-500">
+                                    · nakład: {item.naklad}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {item.data_wydania && (
+                                  <span>· {formatDate(item.data_wydania)}</span>
+                                )}
 
-                                                  <div>
-                                                    {item.cena_zakupu && (
-                                                      <p className="text-sm font-medium text-gray-700">
-                                                        {item.cena_zakupu}
-                                                        {item.cena_zakupu_do ? `–${item.cena_zakupu_do}` : ''} PLN
-                                                      </p>
-                                                    )}
+                                {banknoteSeries && (
+                                  <span>· {banknoteSeries}</span>
+                                )}
+                              </>
+                            )}
 
-                                                    {item.wartosc_aktualna && (
-                                                      <p className="text-xs text-gray-500">
-                                                        Obecna: {item.wartosc_aktualna} PLN
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                </div>
+                            {listBadges.map((badge) => (
+                              <span
+                                key={badge}
+                                className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
+                              >
+                                {badge}
+                              </span>
+                            ))}
+                          </p>
+
+                          {location && (
+                            <p className="mt-0.5 truncate text-sm text-gray-500">
+                              {location}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="ml-4 flex flex-shrink-0 flex-col items-center gap-2 text-right">
+                          {item.do_kupienia && (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                              Do kupienia
+                            </span>
+                          )}
+
+                          <div>
+                            {item.cena_zakupu && (
+                              <p className="text-sm font-medium text-gray-700">
+                                {item.cena_zakupu}
+                                {item.cena_zakupu_do
+                                  ? `–${item.cena_zakupu_do}`
+                                  : ''}{' '}
+                                PLN
+                              </p>
+                            )}
+
+                            {item.wartosc_aktualna && (
+                              <p className="text-xs text-gray-500">
+                                Obecna: {item.wartosc_aktualna} PLN
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </button>
                   )
@@ -412,7 +503,7 @@ export default function ItemsList({
               </div>
             )}
 
-                        {pagination?.total > 0 && (
+            {pagination?.total > 0 && (
               <p className="text-center text-sm text-gray-500">
                 Wyświetlono {items.length} z {pagination.total} pozycji
               </p>
@@ -421,14 +512,14 @@ export default function ItemsList({
             {pagination?.hasMore && (
               <button
                 type="button"
-               onClick={onLoadMore}
-                className="w-full rounded-lg border border-blue-300 bg-white py-3 font-medium text-blue-600 hover:bg-blue-50"
+                onClick={onLoadMore}
+                className="w-full rounded-lg border border-blue-300 bg-white py-3 font-medium text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
               >
                 Pokaż kolejne 20
               </button>
             )}
 
-                        <div className="pt-1 text-center">
+            <div className="pt-1 text-center">
               <button
                 type="button"
                 onClick={() => exportItemsToCsv(items, { scope: 'widoczne' })}
@@ -439,7 +530,7 @@ export default function ItemsList({
             </div>
           </>
         )}
-            </div>
+      </div>
     </div>
   )
 }
