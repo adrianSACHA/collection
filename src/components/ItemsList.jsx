@@ -253,7 +253,7 @@ export default function ItemsList({
                       onClick={() => openItem(item)}
                       className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-left transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                     >
-                                            <div className="relative aspect-square w-full bg-gray-100">
+                                                                                        <div className="relative flex h-40 w-full items-center justify-center overflow-hidden bg-gray-100 p-2 lg:h-48">
                         {(() => {
                           const photos = thumbnails[item.id] || {}
                           const hasAny = photos.awers || photos.rewers
@@ -266,14 +266,16 @@ export default function ItemsList({
                             )
                           }
 
-                                                    return (
-                            <div className="flex h-full w-full flex-col">
+                          // Zdjęcia ograniczone do rozmiaru kafelka (max-h-full /
+                          // max-w-full), żeby nigdy nie rozpychały grida.
+                          return (
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-1">
                               {photos.awers && (
                                 <img
                                   src={photos.awers}
                                   alt=""
                                   loading="lazy"
-                                  className="min-h-0 flex-1 w-full object-contain transition-transform group-hover:scale-105"
+                                  className="min-h-0 max-h-full min-w-0 max-w-full flex-1 object-contain transition-transform group-hover:scale-105"
                                 />
                               )}
                               {photos.rewers && (
@@ -281,7 +283,7 @@ export default function ItemsList({
                                   src={photos.rewers}
                                   alt=""
                                   loading="lazy"
-                                  className="min-h-0 flex-1 w-full object-contain transition-transform group-hover:scale-105"
+                                  className="min-h-0 max-h-full min-w-0 max-w-full flex-1 object-contain transition-transform group-hover:scale-105"
                                 />
                               )}
                             </div>
@@ -301,7 +303,7 @@ export default function ItemsList({
                         )}
                       </div>
 
-                                            <div className="flex flex-1 flex-col gap-0.5 p-2.5">
+                                                                                        <div className="flex flex-col gap-0.5 p-2.5">
                         <p className="truncate font-medium text-gray-800">
                           {item.nominal}
                           {isCoin
