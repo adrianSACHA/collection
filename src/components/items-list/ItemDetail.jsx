@@ -41,6 +41,14 @@ export default function ItemDetail({
     return `do ${do_} PLN`
   }
 
+  // Numer serii (KN) ze znaczkiem ✻ przed lub za wartością (wykluczają się).
+  const formatSeria = () => {
+    if (!item.seria) return null
+    if (item.gwiazdka_przed) return `✻ ${item.seria}`
+    if (item.gwiazdka_za) return `${item.seria} ✻`
+    return item.seria
+  }
+
   // Zaznaczone flagi (pokazujemy tylko wybrane, brak = nic się nie pokazuje).
   const flagi = [
     item.unc && 'UNC',
@@ -125,10 +133,7 @@ export default function ItemDetail({
         />
         <DetailRow label="Udr.-BST." value={item.nadruk} />
         <DetailRow label="FZ" value={item.kod_drukarni} />
-        <DetailRow
-          label={item.gwiazdka ? '✻ KN' : 'KN'}
-          value={item.seria}
-        />
+        <DetailRow label="KN" value={formatSeria()} />
         {/* Opis znaku wodnego pokazujemy w szczegółach tylko, gdy nie ma zdjęcia
             (w przeciwnym razie byłby zdublowany - opis jest już przy miniaturze). */}
         {!safePhotos.znak_wodny && (

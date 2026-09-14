@@ -19,8 +19,9 @@ create table if not exists items (
     do_kupienia boolean default false,
         unc boolean default false,
     bardzo_rzadki boolean default false,
-    rzadki boolean default false,
-    gwiazdka boolean default false,
+        rzadki boolean default false,
+    gwiazdka_przed boolean default false,
+    gwiazdka_za boolean default false,
     uwagi text,
   -- monety
   naklad text,

@@ -326,7 +326,7 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                                                 />
                                                             </FormField>
 
-                                                            <FormField label="KN" htmlFor="seria" className="flex-1">
+                                                                                                                        <FormField label="KN" htmlFor="seria" className="flex-1">
                                                                 <input
                                                                     id="seria"
                                                                     type="text"
@@ -336,15 +336,34 @@ export default function ItemForm({ itemId, duplicateFrom, onSaved, onCancel, fix
                                                                     className={`${inputClass} border-gray-300`}
                                                                 />
 
-                                                                <label className="mt-1 flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={v.gwiazdka}
-                                                                        onChange={(e) => setField('gwiazdka', e.target.checked)}
-                                                                        className="h-4 w-4 rounded border-gray-300"
-                                                                    />
-                                                                    <span>✻ oznacz</span>
-                                                                </label>
+                                                                {/* Znaczek ✻ przy numerze serii - przed lub za (wykluczają się). */}
+                                                                <div className="mt-1 flex items-center gap-3">
+                                                                    <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={v.gwiazdka_przed}
+                                                                            onChange={(e) => {
+                                                                                setField('gwiazdka_przed', e.target.checked)
+                                                                                if (e.target.checked) setField('gwiazdka_za', false)
+                                                                            }}
+                                                                            className="h-4 w-4 rounded border-gray-300"
+                                                                        />
+                                                                        <span>✻ przed</span>
+                                                                    </label>
+
+                                                                    <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-600">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={v.gwiazdka_za}
+                                                                            onChange={(e) => {
+                                                                                setField('gwiazdka_za', e.target.checked)
+                                                                                if (e.target.checked) setField('gwiazdka_przed', false)
+                                                                            }}
+                                                                            className="h-4 w-4 rounded border-gray-300"
+                                                                        />
+                                                                        <span>✻ za</span>
+                                                                    </label>
+                                                                </div>
                                                             </FormField>
                                                         </div>
 
