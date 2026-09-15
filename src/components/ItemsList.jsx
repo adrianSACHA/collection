@@ -300,6 +300,8 @@ export default function ItemsList({
                     : formatBanknoteSeries(item)
                   const listBadges = getListBadges(item)
                   const location = formatLocation(item)
+                  // Udr.-BST. / nadruk - tylko banknoty, pokazywany przed serią.
+                  const nadruk = isCoin ? '' : item.nadruk?.trim()
 
                   return (
                     <button
@@ -357,7 +359,7 @@ export default function ItemsList({
                         )}
                       </div>
 
-                      <div className="flex min-w-0 flex-col gap-0.5 p-2.5">
+                      <div className="flex min-w-0 flex-col gap-1.5 p-2.5">
                         <p className="truncate font-medium text-gray-800">
                           {item.nominal}
                           {isCoin
@@ -368,6 +370,12 @@ export default function ItemsList({
                               ? ` · ${formatDate(item.data_wydania)}`
                               : ''}
                         </p>
+
+                        {nadruk && (
+                          <p className="truncate text-xs text-gray-500">
+                            {nadruk}
+                          </p>
+                        )}
 
                         {!isCoin && banknoteSeries && (
                           <p className="truncate text-xs text-gray-500">
@@ -406,6 +414,8 @@ export default function ItemsList({
                     : formatBanknoteSeries(item)
                   const listBadges = getListBadges(item)
                   const location = formatLocation(item)
+                  // Udr.-BST. / nadruk - tylko banknoty, pokazywany przed serią.
+                  const nadruk = isCoin ? '' : item.nadruk?.trim()
 
                   return (
                     <button
@@ -429,7 +439,7 @@ export default function ItemsList({
                         )}
 
                         <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 font-medium text-gray-800">
+                          <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-medium text-gray-800">
                             <span>{item.nominal}</span>
 
                             {isCoin ? (
@@ -447,6 +457,8 @@ export default function ItemsList({
                                 {item.data_wydania && (
                                   <span>· {formatDate(item.data_wydania)}</span>
                                 )}
+
+                                {nadruk && <span>· {nadruk}</span>}
 
                                 {banknoteSeries && (
                                   <span>· {banknoteSeries}</span>
