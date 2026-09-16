@@ -17,8 +17,11 @@ export function useItemForm({
 }) {
   const isEditMode = Boolean(itemId)
 
+  // Wartości początkowe ustawiamy leniwie już przy montowaniu:
+  // duplikat od razu wypełnia formularz, a edycja startuje z pustego stanu
+  // i zostanie uzupełniona po wczytaniu danych.
   const [values, setValues] = useState(() =>
-    getEmptyFormState(fixedType)
+    duplicateFrom ? mapItemToFormState(duplicateFrom) : getEmptyFormState(fixedType)
   )
 
   const [awersFile, setAwersFile] = useState(null)
@@ -31,7 +34,8 @@ export function useItemForm({
   const [photoDeleting, setPhotoDeleting] = useState(null)
   const [photoResetKey, setPhotoResetKey] = useState(0)
 
-  const [loading, setLoading] = useState(false)
+  // W trybie edycji od razu pokazujemy stan "wczytywanie" - dane pobieramy w efekcie.
+  const [loading, setLoading] = useState(isEditMode)
   const [savingMode, setSavingMode] = useState(null)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
@@ -69,54 +73,54 @@ export function useItemForm({
   }, [])
 
   const loadPhotos = useCallback(
-    async (targetItemId) => {
+    (targetItemId) => {
       const idToUse = targetItemId || itemId
 
       if (!idToUse) return
 
-      try {
-        const { data, error: queryError } = await supabase
-          .from('item_photos')
-          .select('typ, url')
-          .eq('item_id', idToUse)
+      // Jak w loadItem - stan ustawiamy w callbacku łańcucha, nie synchronicznie.
+      return supabase
+        .from('item_photos')
+        .select('typ, url')
+        .eq('item_id', idToUse)
+        .then(({ data, error: queryError }) => {
+          if (queryError) throw queryError
 
-        if (queryError) throw queryError
+          const photosMap = {}
 
-        const photosMap = {}
+          for (const photo of data || []) {
+            photosMap[photo.typ] = photo.url
+          }
 
-        for (const photo of data || []) {
-          photosMap[photo.typ] = photo.url
-        }
-
-        setExistingPhotos(photosMap)
-      } catch (err) {
-        console.error('Błąd wczytywania zdjęć:', err)
-      }
+          setExistingPhotos(photosMap)
+        })
+        .catch((err) => {
+          console.error('Błąd wczytywania zdjęć:', err)
+        })
     },
     [itemId]
   )
 
-  const loadItem = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+  const loadItem = useCallback(() => {
+    // Aktualizacje stanu w callbackach łańcucha (po await/rozstrzygnięciu) -
+    // dzięki temu nie ustawiamy stanu synchronicznie w efekcie wywołującym.
+    supabase
+      .from('items')
+      .select('*')
+      .eq('id', itemId)
+      .single()
+      .then(({ data, error: queryError }) => {
+        if (queryError) throw queryError
+        if (!data) throw new Error('Przedmiot nie znaleziony.')
 
-      const { data, error: queryError } = await supabase
-        .from('items')
-        .select('*')
-        .eq('id', itemId)
-        .single()
-
-      if (queryError) throw queryError
-      if (!data) throw new Error('Przedmiot nie znaleziony.')
-
-      setValues(mapItemToFormState(data))
-    } catch (err) {
-      console.error('Błąd wczytywania przedmiotu:', err)
-      setError(`Nie udało się wczytać przedmiotu: ${err.message}`)
-    } finally {
-      setLoading(false)
-    }
+        setValues(mapItemToFormState(data))
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error('Błąd wczytywania przedmiotu:', err)
+        setError(`Nie udało się wczytać przedmiotu: ${err.message}`)
+        setLoading(false)
+      })
   }, [itemId])
 
   useEffect(() => {
@@ -125,12 +129,6 @@ export function useItemForm({
     loadItem()
     loadPhotos(itemId)
   }, [isEditMode, itemId, loadItem, loadPhotos])
-
-  useEffect(() => {
-    if (!duplicateFrom || isEditMode) return
-
-    setValues(mapItemToFormState(duplicateFrom))
-  }, [duplicateFrom, isEditMode])
 
   const effectiveTyp = isEditMode
     ? values.typ

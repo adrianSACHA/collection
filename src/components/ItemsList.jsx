@@ -101,10 +101,11 @@ export default function ItemsList({
   )
 
   useEffect(() => {
-    if (!itemsKey) {
-      setThumbnails({})
-      return
-    }
+    // Gdy lista jest pusta, nie ma czego renderować - pomijamy wczytywanie.
+    // Świadomie nie czyścimy tu stanu synchronicznie (reguła
+    // react-hooks/set-state-in-effect): miniatury nie są używane, dopóki nie ma
+    // pozycji, a kolejne wczytanie i tak nadpisuje całą mapę.
+    if (!itemsKey) return
 
     const ids = itemsKey.split(',')
 

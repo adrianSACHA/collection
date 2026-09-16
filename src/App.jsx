@@ -4,6 +4,9 @@ import FilterModal from './components/FilterModal'
 import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
 import LoadingFallback from './components/LoadingFallback'
+import MobileBottomNav from './components/navigation/MobileBottomNav'
+import AddItemSheet from './components/navigation/AddItemSheet'
+import MoreSheet from './components/navigation/MoreSheet'
 import { exportItemsToCsv } from './components/items-list/exportCsv'
 import { fetchAllItemsForExport } from './lib/itemsApi'
 import { supabase } from './lib/supabase'
@@ -39,6 +42,46 @@ function getInitialSidebarCollapsed() {
   return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
 }
 
+// Małe ikony inline dla mobilnego przełącznika Lista / Galeria
+// (projekt nie używa zewnętrznej biblioteki ikon).
+function ListIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-5 w-5"
+    >
+      <path d="M8 6h12M8 12h12M8 18h12" />
+      <path d="M4 6h.01M4 12h.01M4 18h.01" />
+    </svg>
+  )
+}
+
+function GalleryIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-5 w-5"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  )
+}
+
 function App() {
   const [view, setView] = useState(getInitialView)
   const [mode, setMode] = useState('lista')
@@ -62,6 +105,16 @@ function App() {
     page: 0,
     hasMore: false,
   })
+
+  // Mobilne bottom sheety (Dodaj / Więcej) - jedyne miejsce trzymające ich stan.
+  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
+  const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false)
+  // Zmiana klucza resetuje wewnętrzny stan ItemsList (np. powrót z detalu).
+  const [listKey, setListKey] = useState(0)
+
+  // Refy przycisków dolnego menu - służą do przywrócenia focusu po zamknięciu sheeta.
+  const addButtonRef = useRef(null)
+  const moreButtonRef = useRef(null)
 
   /*
    * Ten filtr jest głównym kontrolerem zapytań i paginacji.
@@ -159,6 +212,34 @@ function App() {
     setIsDetailView(false)
   }
 
+  // --- Nawigacja mobilna (dolne menu) ---
+
+  // "Kolekcja": powrót do istniejącego głównego widoku listy.
+  const openCollection = () => {
+    setIsAddSheetOpen(false)
+    setIsMoreSheetOpen(false)
+    setIsMobileFiltersOpen(false)
+    if (isDetailView) {
+      // Remount ItemsList, aby wyczyścić jego wewnętrzny wybór (widok szczegółów).
+      setListKey((key) => key + 1)
+    }
+    setMode('lista')
+    setIsDetailView(false)
+  }
+
+  // "Filtry": otwiera istniejący panel filtrów i sortowania (FilterModal).
+  const openMobileFilters = () => {
+    setIsAddSheetOpen(false)
+    setIsMoreSheetOpen(false)
+    setIsMobileFiltersOpen(true)
+  }
+
+  // "Dodaj": uruchamia istniejący formularz (ItemForm) dla wybranego typu.
+  const startAddItem = (type) => {
+    if (type !== view) switchType(type)
+    goToAdd('pelny')
+  }
+
   const changeLayout = (nextLayout) => {
     setLayout(nextLayout)
     window.localStorage.setItem(LAYOUT_STORAGE_KEY, nextLayout)
@@ -180,6 +261,13 @@ function App() {
   const showFilters = mode === 'lista' && !isDetailView
   const canExport = Array.isArray(filterResults) && filterResults.length > 0
 
+  // Aktywna pozycja dolnego menu mobilnego.
+  const activeMobileTab = isMobileFiltersOpen
+    ? 'filtry'
+    : mode === 'lista' && !isDetailView
+      ? 'kolekcja'
+      : null
+
   return (
     <AuthGate>
       <div className="min-h-screen flex flex-col lg:flex-row lg:bg-gray-50">
@@ -188,7 +276,7 @@ function App() {
           <button
             type="button"
             onClick={() => switchType('moneta')}
-            className={`flex-1 py-3 font-medium transition-colors ${
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
               view === 'moneta'
                 ? 'border-b-2 border-blue-600 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
@@ -200,7 +288,7 @@ function App() {
           <button
             type="button"
             onClick={() => switchType('banknot')}
-            className={`flex-1 py-3 font-medium transition-colors ${
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
               view === 'banknot'
                 ? 'border-b-2 border-blue-600 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
@@ -314,20 +402,14 @@ function App() {
           </button>
         )}
 
-        <main className="flex-1 lg:overflow-auto">
+        <main className="flex-1 pb-24 lg:overflow-auto lg:pb-0">
           {mode === 'lista' ? (
             <div className="space-y-4 p-4 lg:p-6">
-              {/* Filtr + sortowanie na mobile: jeden przycisk otwierający modal */}
+              {/* Panel filtrów/sortowania na mobile otwiera przycisk "Filtry"
+                  z dolnego menu. Stary przycisk nad listą usunięty, żeby lista
+                  zaczynała się wyżej. Modal zostaje zamontowany jak wcześniej. */}
               {showFilters && (
                 <div className="lg:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setIsMobileFiltersOpen(true)}
-                    className="w-full rounded-lg border border-gray-300 bg-white py-2.5 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-                  >
-                    ☰ Filtry i sortowanie
-                  </button>
-
                   <FilterModal
                     isOpen={isMobileFiltersOpen}
                     onClose={closeMobileFilters}
@@ -343,8 +425,10 @@ function App() {
                 </div>
               )}
 
+              {/* Szybkie/pełne dodawanie widoczne tylko na desktopie (<lg ukryte;
+                  na mobile ich rolę przejmuje przycisk "Dodaj" w dolnym menu). */}
               {showFilters && (
-                <div className="mx-auto max-w-md lg:max-w-6xl">
+                <div className="mx-auto hidden max-w-md lg:block lg:max-w-6xl">
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
@@ -371,10 +455,48 @@ function App() {
                     {view === 'moneta' ? 'Monety' : 'Banknoty'}
                   </h2>
 
+                  {/* Mobile: dwie małe ikony (stan viewMode bez zmian) */}
                   <div
                     role="group"
                     aria-label="Sposób wyświetlania"
-                    className="inline-flex rounded-lg border border-gray-200 bg-white p-1"
+                    className="inline-flex rounded-lg border border-gray-200 bg-white p-1 lg:hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => changeLayout('lista')}
+                      aria-pressed={layout === 'lista'}
+                      aria-label="Widok listy"
+                      title="Lista"
+                      className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                        layout === 'lista'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <ListIcon />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => changeLayout('galeria')}
+                      aria-pressed={layout === 'galeria'}
+                      aria-label="Widok galerii"
+                      title="Galeria"
+                      className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                        layout === 'galeria'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <GalleryIcon />
+                    </button>
+                  </div>
+
+                  {/* Desktop: przyciski tekstowe (bez zmian) */}
+                  <div
+                    role="group"
+                    aria-label="Sposób wyświetlania"
+                    className="hidden rounded-lg border border-gray-200 bg-white p-1 lg:inline-flex"
                   >
                     <button
                       type="button"
@@ -406,6 +528,7 @@ function App() {
               )}
 
               <ItemsList
+                key={listKey}
                 filteredItems={filterResults}
                 onModeChange={setIsDetailView}
                 pagination={pagination}
@@ -431,6 +554,36 @@ function App() {
             </Suspense>
           )}
         </main>
+
+        {/* Dolna nawigacja mobilna (< lg) + mobilne bottom sheety.
+            Widoczne tylko na mobile; na desktopie nic się nie zmienia. */}
+        <MobileBottomNav
+          activeTab={activeMobileTab}
+          onOpenCollection={openCollection}
+          onOpenFilters={openMobileFilters}
+          onOpenAdd={() => setIsAddSheetOpen(true)}
+          onOpenMore={() => setIsMoreSheetOpen(true)}
+          addButtonRef={addButtonRef}
+          moreButtonRef={moreButtonRef}
+        />
+
+        <AddItemSheet
+          isOpen={isAddSheetOpen}
+          onClose={() => setIsAddSheetOpen(false)}
+          onAddCoin={() => startAddItem('moneta')}
+          onAddBanknote={() => startAddItem('banknot')}
+          triggerRef={addButtonRef}
+        />
+
+        <MoreSheet
+          isOpen={isMoreSheetOpen}
+          onClose={() => setIsMoreSheetOpen(false)}
+          onExport={handleExportAll}
+          isExporting={isExporting}
+          exportError={exportError}
+          onLogout={() => supabase.auth.signOut()}
+          triggerRef={moreButtonRef}
+        />
       </div>
     </AuthGate>
   )
