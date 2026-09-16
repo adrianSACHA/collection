@@ -28,42 +28,34 @@ function getListBadges(item) {
   ].filter(Boolean)
 }
 
+// Wspólne oznaczenie banknotu dla listy i galerii (jedna funkcja dla obu widoków):
+// nadruk -> FZ -> seria -> KN / numer -> gwiazdka -> litera końcowa.
+// Bez separatorów; gwiazdki pokazywane wyłącznie przy istniejącym KN.
 // Przykłady:
-// seria=B, kn_seria=12345, gwiazdka_za=true -> "B 12345 ✻"
-// kn_seria=123456, gwiazdka_za=true, koncowka_serii=A -> "123456 ✻ A"
-// kod_drukarni=13, seria=B, kn_seria=123456 -> "13 B 123456"
+// nadruk="J /", kn_seria="№ 9674538 E" -> "J / № 9674538 E"
+// seria=B, kn_seria=16111, gwiazdka_za=true -> "B 16111 ✻"
+// kod_drukarni=13, seria=B, kn_seria=123456, gwiazdka_za=true, koncowka_serii=A
+//   -> "13 B 123456 ✻ A"
+function cleanValue(value) {
+  return String(value || '').trim()
+}
+
 function formatBanknoteSeries(item) {
-  const parts = []
+  const prefixParts = [
+    cleanValue(item.nadruk),
+    cleanValue(item.kod_drukarni),
+    cleanValue(item.seria),
+  ].filter(Boolean)
 
-  if (item.kod_drukarni?.trim()) {
-    parts.push(item.kod_drukarni.trim())
-  }
+  const kn = cleanValue(item.kn_seria)
+  const numberParts = [
+    item.gwiazdka_przed && kn ? '✻' : '',
+    kn,
+    item.gwiazdka_za && kn ? '✻' : '',
+    cleanValue(item.koncowka_serii),
+  ].filter(Boolean)
 
-  if (item.seria?.trim()) {
-    parts.push(item.seria.trim())
-  }
-
-  if (item.gwiazdka_przed) {
-    parts.push('✻')
-  }
-
-  if (
-    item.kn_seria !== null &&
-    item.kn_seria !== undefined &&
-    String(item.kn_seria).trim()
-  ) {
-    parts.push(String(item.kn_seria).trim())
-  }
-
-  if (item.gwiazdka_za) {
-    parts.push('✻')
-  }
-
-  if (item.koncowka_serii?.trim()) {
-    parts.push(item.koncowka_serii.trim())
-  }
-
-  return parts.join(' ')
+  return [...prefixParts, ...numberParts].join(' ')
 }
 
 // Dla banknotów: miasto wydania · emitent (obecnie pole `kraj`).
@@ -301,8 +293,6 @@ export default function ItemsList({
                     : formatBanknoteSeries(item)
                   const listBadges = getListBadges(item)
                   const location = formatLocation(item)
-                  // Udr.-BST. / nadruk - tylko banknoty, pokazywany przed serią.
-                  const nadruk = isCoin ? '' : item.nadruk?.trim()
 
                   return (
                     <button
@@ -372,14 +362,11 @@ export default function ItemsList({
                               : ''}
                         </p>
 
-                        {nadruk && (
-                          <p className="truncate text-xs text-gray-500">
-                            {nadruk}
-                          </p>
-                        )}
-
                         {!isCoin && banknoteSeries && (
-                          <p className="truncate text-xs text-gray-500">
+                          <p
+                            title={banknoteSeries}
+                            className="truncate text-[10px] font-medium text-gray-600"
+                          >
                             {banknoteSeries}
                           </p>
                         )}
@@ -415,8 +402,6 @@ export default function ItemsList({
                     : formatBanknoteSeries(item)
                   const listBadges = getListBadges(item)
                   const location = formatLocation(item)
-                  // Udr.-BST. / nadruk - tylko banknoty, pokazywany przed serią.
-                  const nadruk = isCoin ? '' : item.nadruk?.trim()
 
                   return (
                     <button
@@ -440,48 +425,110 @@ export default function ItemsList({
                         )}
 
                         <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-medium text-gray-800">
-                            <span>{item.nominal}</span>
+                          {/* Mobile: osobne, krótkie wiersze bez kropek. */}
+                          <div className="lg:hidden">
+                            <p className="font-semibold text-gray-800">
+                              {item.nominal}
+                            </p>
 
-                            {isCoin ? (
-                              <>
-                                {item.rok && <span>· {item.rok}</span>}
-
-                                {item.naklad && (
-                                  <span className="text-sm font-normal text-gray-500">
-                                    · nakład: {item.naklad}
-                                  </span>
+                            {isCoin
+                              ? item.rok && (
+                                  <p className="text-sm text-gray-600">
+                                    {item.rok}
+                                  </p>
+                                )
+                              : item.data_wydania && (
+                                  <p className="text-sm text-gray-600">
+                                    {formatDate(item.data_wydania)}
+                                  </p>
                                 )}
-                              </>
-                            ) : (
-                              <>
-                                {item.data_wydania && (
-                                  <span>· {formatDate(item.data_wydania)}</span>
-                                )}
 
-                                {nadruk && <span>· {nadruk}</span>}
-
-                                {banknoteSeries && (
-                                  <span>· {banknoteSeries}</span>
-                                )}
-                              </>
+                            {isCoin && item.naklad && (
+                              <p className="text-sm text-gray-500">
+                                nakład: {item.naklad}
+                              </p>
                             )}
 
-                            {listBadges.map((badge) => (
-                              <span
-                                key={badge}
-                                className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
+                            {banknoteSeries && (
+                              <p
+                                title={banknoteSeries}
+                                className="truncate text-sm font-medium text-gray-700"
                               >
-                                {badge}
-                              </span>
-                            ))}
-                          </p>
+                                {banknoteSeries}
+                              </p>
+                            )}
 
-                          {location && (
-                            <p className="mt-0.5 truncate text-sm text-gray-500">
-                              {location}
-                            </p>
-                          )}
+                            {location && (
+                              <p className="truncate text-sm text-gray-500">
+                                {location}
+                              </p>
+                            )}
+
+                            {listBadges.length > 0 && (
+                              <p className="truncate text-sm text-gray-500">
+                                {listBadges.join(', ')}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Desktop: zwarty układ, maks. jeden separator |. */}
+                          <div className="hidden lg:block">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="font-semibold text-gray-800">
+                                {item.nominal}
+                              </span>
+
+                              {isCoin
+                                ? item.rok && (
+                                    <span className="text-gray-600">
+                                      {item.rok}
+                                    </span>
+                                  )
+                                : item.data_wydania && (
+                                    <span className="text-gray-600">
+                                      {formatDate(item.data_wydania)}
+                                    </span>
+                                  )}
+
+                              {isCoin && item.naklad && (
+                                <span className="text-sm text-gray-500">
+                                  nakład: {item.naklad}
+                                </span>
+                              )}
+
+                              {banknoteSeries && (
+                                <>
+                                  <span
+                                    aria-hidden="true"
+                                    className="text-gray-300"
+                                  >
+                                    |
+                                  </span>
+                                  <span
+                                    title={banknoteSeries}
+                                    className="font-medium text-gray-700"
+                                  >
+                                    {banknoteSeries}
+                                  </span>
+                                </>
+                              )}
+
+                              {listBadges.map((badge) => (
+                                <span
+                                  key={badge}
+                                  className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
+                                >
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+
+                            {location && (
+                              <p className="mt-1 truncate text-sm text-gray-500">
+                                {location}
+                              </p>
+                            )}
+                          </div>
                         </div>
 
                         <div className="ml-4 flex flex-shrink-0 flex-col items-center gap-2 text-right">
