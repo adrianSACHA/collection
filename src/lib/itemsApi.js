@@ -1,8 +1,6 @@
 import { supabase } from './supabase'
 import { applyFiltersToQuery, getSortOption } from './itemFilters'
 
-const PAGE_SIZE = 30
-
 // Supabase/PostgREST ma domyślny limit 1000 wierszy na zapytanie.
 // Dzielimy pobranie na "porcje", aż dostaniemy komplet.
 const EXPORT_CHUNK_SIZE = 1000
@@ -44,71 +42,6 @@ export async function fetchAllItemsForExport(filters) {
   return all
 }
 
-/**
- * Pobiera jedną "stronę" przedmiotów wraz z ich zdjęciami.
- * Używane przez useInfiniteQuery.
- */
-export async function fetchItemsPage({ pageParam = 0, filterTyp = 'wszystkie', search = '' }) {
-  const from = pageParam * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
-
-  let query = supabase
-    .from('items')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to)
-
-  if (filterTyp !== 'wszystkie') {
-    query = query.eq('typ', filterTyp)
-  }
-
-  const term = search.trim()
-  if (term) {
-    const isNumeric = /^\d+$/.test(term)
-                const conditions = [
-      `kraj.ilike.%${term}%`,
-      `nominal.ilike.%${term}%`,
-      `mennica.ilike.%${term}%`,
-      `material.ilike.%${term}%`,
-      `uwagi.ilike.%${term}%`,
-    ]
-    if (isNumeric) {
-      conditions.push(`rok.eq.${term}`)
-    }
-    query = query.or(conditions.join(','))
-  }
-
-  const { data: items, error, count } = await query
-  if (error) throw error
-
-  const itemIds = items.map((i) => i.id)
-  let photosByItem = {}
-
-  if (itemIds.length > 0) {
-    const { data: photos, error: photosError } = await supabase
-      .from('item_photos')
-      .select('*')
-      .in('item_id', itemIds)
-
-    if (photosError) throw photosError
-
-    photosByItem = photos.reduce((acc, p) => {
-      if (!acc[p.item_id]) acc[p.item_id] = {}
-      acc[p.item_id][p.typ] = p.url
-      return acc
-    }, {})
-  }
-
-  const hasMore = to + 1 < count
-
-  return {
-    items,
-    photosByItem,
-    nextPage: hasMore ? pageParam + 1 : undefined,
-    totalCount: count,
-  }
-}
-
 export async function insertItem(payload) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
@@ -117,18 +50,6 @@ export async function insertItem(payload) {
   const { data, error } = await supabase
     .from('items')
     .insert({ ...payload, user_id: userData.user.id })
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function updateItem(id, payload) {
-  const { data, error } = await supabase
-    .from('items')
-    .update({ ...payload, updated_at: new Date().toISOString() })
-    .eq('id', id)
     .select()
     .single()
 

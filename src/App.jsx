@@ -123,6 +123,13 @@ function App() {
    */
   const desktopFiltersRef = useRef(null)
 
+  // Wymusza ponowne wczytanie listy z bieżącymi filtrami. Lista nie używa
+  // react-query (ItemFilters pobiera ją ręcznie), dlatego invalidacja
+  // ['items'] nic nie robi - trzeba jawnie odświeżyć wyniki.
+  const refreshList = useCallback(() => {
+    desktopFiltersRef.current?.refresh()
+  }, [])
+
   const handleResults = useCallback(
     (newItems, { append = false } = {}) => {
       if (newItems === null) {
@@ -215,6 +222,9 @@ function App() {
   const backToListAfterSave = () => {
     setMode('lista')
     setIsDetailView(false)
+    // Lista jest pobierana ręcznie przez ItemFilters (nie przez react-query),
+    // więc po zapisie wymuszamy ponowne wczytanie aktualnych filtrów.
+    refreshList()
   }
 
   // --- Nawigacja mobilna (dolne menu) ---
@@ -544,6 +554,7 @@ function App() {
                 key={listKey}
                 filteredItems={filterResults}
                 onModeChange={setIsDetailView}
+                onItemsChanged={refreshList}
                 pagination={pagination}
                 onLoadMore={loadMore}
                 viewMode={layout}

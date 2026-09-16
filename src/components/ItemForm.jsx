@@ -321,17 +321,17 @@ export default function ItemForm({
                                         htmlFor="seria"
                                         hint="Np. B"
                                     >
-                                        <input
-                                            id="seria"
-                                            type="text"
-                                            value={v.seria || ''}
-                                            onChange={(event) =>
-                                                setField('seria', event.target.value.toUpperCase())
-                                            }
-                                            placeholder="np. B"
-                                            maxLength="10"
-                                            className={`${inputClass} border-gray-300 uppercase`}
-                                        />
+                                                                                <input
+                                                                                    id="seria"
+                                                                                    type="text"
+                                                                                    value={v.seria || ''}
+                                                                                    onChange={(event) =>
+                                                                                        setField('seria', event.target.value)
+                                                                                    }
+                                                                                    placeholder="np. B"
+                                                                                    maxLength="10"
+                                                                                    className={`${inputClass} border-gray-300`}
+                                                                                />
                                     </FormField>
 
                                     <FormField
@@ -339,19 +339,16 @@ export default function ItemForm({
                                         htmlFor="kod_drukarni"
                                         hint="Kod drukarni"
                                     >
-                                        <input
+                                                                                <input
                                             id="kod_drukarni"
                                             type="text"
                                             value={v.kod_drukarni || ''}
                                             onChange={(event) =>
-                                                setField(
-                                                    'kod_drukarni',
-                                                    event.target.value.toUpperCase()
-                                                )
+                                                setField('kod_drukarni', event.target.value)
                                             }
                                             placeholder="np. WZP"
                                             maxLength="20"
-                                            className={`${inputClass} border-gray-300 uppercase`}
+                                            className={`${inputClass} border-gray-300`}
                                         />
                                     </FormField>
 
@@ -378,19 +375,16 @@ export default function ItemForm({
                                         htmlFor="koncowka_serii"
                                         hint="Po numerze lub gwiazdce"
                                     >
-                                        <input
+                                                                                <input
                                             id="koncowka_serii"
                                             type="text"
                                             value={v.koncowka_serii || ''}
                                             onChange={(event) =>
-                                                setField(
-                                                    'koncowka_serii',
-                                                    event.target.value.toUpperCase()
-                                                )
+                                                setField('koncowka_serii', event.target.value)
                                             }
                                             placeholder="np. A"
                                             maxLength="10"
-                                            className={`${inputClass} border-gray-300 uppercase`}
+                                            className={`${inputClass} border-gray-300`}
                                         />
                                     </FormField>
                                 </div>

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { uploadPhoto, deletePhoto } from '../../lib/uploadPhoto'
 import {
@@ -42,7 +41,6 @@ export function useItemForm({
   const [fieldErrors, setFieldErrors] = useState({})
 
   const nominalInputRef = useRef(null)
-  const queryClient = useQueryClient()
 
   const setField = useCallback((name, value) => {
     setValues((previous) => ({
@@ -175,10 +173,6 @@ export function useItemForm({
         setZnakWodnyFile(null)
 
         await loadPhotos(targetItemId)
-
-        queryClient.invalidateQueries({
-          queryKey: ['items'],
-        })
       } catch (err) {
         console.error('Błąd wgrywania zdjęć:', err)
 
@@ -194,7 +188,6 @@ export function useItemForm({
       rewersFile,
       znakWodnyFile,
       loadPhotos,
-      queryClient,
     ]
   )
 
@@ -244,10 +237,6 @@ export function useItemForm({
           delete next[photoTyp]
           return next
         })
-
-        queryClient.invalidateQueries({
-          queryKey: ['items'],
-        })
       } catch (err) {
         console.error('Błąd usuwania zdjęcia:', err)
 
@@ -258,7 +247,7 @@ export function useItemForm({
         setPhotoDeleting(null)
       }
     },
-    [itemId, queryClient]
+    [itemId]
   )
 
   const handleSubmit = useCallback(
@@ -295,10 +284,6 @@ export function useItemForm({
 
           await uploadSelectedPhotos(itemId)
 
-          queryClient.invalidateQueries({
-            queryKey: ['items'],
-          })
-
           onSaved?.(data)
           return
         }
@@ -328,10 +313,6 @@ export function useItemForm({
         setSuccess(true)
 
         await uploadSelectedPhotos(data.id)
-
-        queryClient.invalidateQueries({
-          queryKey: ['items'],
-        })
 
         if (mode === 'addAnother') {
           resetForm({ keepType: true })
@@ -373,7 +354,6 @@ export function useItemForm({
       onSaved,
       uploadSelectedPhotos,
       resetForm,
-      queryClient,
     ]
   )
 

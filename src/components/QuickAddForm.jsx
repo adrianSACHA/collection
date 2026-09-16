@@ -1,5 +1,5 @@
  import { useEffect, useRef, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import PhotoCapture from './PhotoCapture'
 import FormField from './item-form/FormField'
 import { inputClass } from './item-form/formHelpers'
@@ -29,8 +29,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
   const [savingMode, setSavingMode] = useState(null) // 'default' | 'addAnother'
 
   const nominalInputRef = useRef(null)
-
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!success) return
@@ -65,7 +63,6 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
       return { item, mode }
     },
     onSuccess: ({ item, mode }) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] })
       setSuccess(true)
 
       if (mode === 'addAnother') {

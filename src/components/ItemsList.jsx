@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { deleteItem } from '../lib/itemsApi'
 import { supabase } from '../lib/supabase'
 import LoadingFallback from './LoadingFallback'
@@ -82,6 +82,7 @@ function formatLocation(item) {
 export default function ItemsList({
   filteredItems,
   onModeChange,
+  onItemsChanged,
   pagination,
   onLoadMore,
   viewMode = 'lista',
@@ -95,7 +96,6 @@ export default function ItemsList({
   const [selectedPhotos, setSelectedPhotos] = useState({})
   const [thumbnailsRefreshKey, setThumbnailsRefreshKey] = useState(0)
 
-  const queryClient = useQueryClient()
   const items = useMemo(() => filteredItems || [], [filteredItems])
   const totalCount = items.length
 
@@ -170,7 +170,7 @@ export default function ItemsList({
   const deleteMutation = useMutation({
     mutationFn: (itemId) => deleteItem(itemId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] })
+      onItemsChanged?.()
       setSelectedItem(null)
       setConfirmDelete(false)
       onModeChange?.(false)
@@ -204,7 +204,7 @@ export default function ItemsList({
   }
 
   const handleDuplicated = () => {
-    queryClient.invalidateQueries({ queryKey: ['items'] })
+    onItemsChanged?.()
     setDuplicateItem(null)
     setSelectedItem(null)
     setThumbnailsRefreshKey((key) => key + 1)
@@ -224,7 +224,7 @@ export default function ItemsList({
   }
 
   const handleSaved = (updatedItem) => {
-    queryClient.invalidateQueries({ queryKey: ['items'] })
+    onItemsChanged?.()
     setSelectedItem(updatedItem)
     setIsEditing(false)
     setThumbnailsRefreshKey((key) => key + 1)

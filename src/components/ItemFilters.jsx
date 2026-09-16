@@ -200,12 +200,20 @@ const ItemFilters = forwardRef(function ItemFilters(
     })
   }, [currentPage, handleFilter, hasMore, loading])
 
+  // Ponowne wczytanie pierwszej strony z bieżącymi filtrami.
+  // Używane po dodaniu/edycji/usunięciu pozycji, żeby lista była świeża
+  // bez ręcznego odświeżania strony.
+  const refresh = useCallback(() => {
+    handleFilter({ page: 0, append: false })
+  }, [handleFilter])
+
   useImperativeHandle(
     ref,
     () => ({
       loadMore,
+      refresh,
     }),
-    [loadMore]
+    [loadMore, refresh]
   )
 
   const handleSortChange = (event) => {
