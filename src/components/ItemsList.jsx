@@ -28,6 +28,18 @@ function getListBadges(item) {
   ].filter(Boolean)
 }
 
+// Delikatne różnicowanie kolorów badge'ów na desktopie (bez zmiany danych).
+function getBadgeClass(badge) {
+  const classes = {
+    UNC: 'bg-emerald-50 text-emerald-700',
+    Unikat: 'bg-amber-50 text-amber-800',
+    'Bardzo rzadki': 'bg-violet-50 text-violet-700',
+    Rzadki: 'bg-blue-50 text-blue-700',
+  }
+
+  return classes[badge] || 'bg-gray-100 text-gray-600'
+}
+
 // Wspólne oznaczenie banknotu dla listy i galerii (jedna funkcja dla obu widoków):
 // nadruk -> FZ -> seria -> KN / numer -> gwiazdka -> litera końcowa.
 // Bez separatorów; gwiazdki pokazywane wyłącznie przy istniejącym KN.
@@ -408,18 +420,18 @@ export default function ItemsList({
                       key={item.id}
                       type="button"
                       onClick={() => openItem(item)}
-                      className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                      className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 lg:flex lg:min-h-[108px] lg:items-center lg:px-6 lg:py-4"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 lg:flex-1">
                         {thumbnails[item.id]?.awers ? (
                           <img
                             src={thumbnails[item.id].awers}
                             alt=""
                             loading="lazy"
-                            className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain"
+                            className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain lg:h-16 lg:w-16"
                           />
                         ) : (
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-xl text-gray-300">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-xl text-gray-300 lg:h-16 lg:w-16 lg:text-2xl">
                             {isCoin ? '🪙' : '💵'}
                           </div>
                         )}
@@ -480,12 +492,12 @@ export default function ItemsList({
 
                               {isCoin
                                 ? item.rok && (
-                                    <span className="text-gray-600">
+                                    <span className="text-gray-500">
                                       {item.rok}
                                     </span>
                                   )
                                 : item.data_wydania && (
-                                    <span className="text-gray-600">
+                                    <span className="font-normal text-gray-500">
                                       {formatDate(item.data_wydania)}
                                     </span>
                                   )}
@@ -516,7 +528,7 @@ export default function ItemsList({
                               {listBadges.map((badge) => (
                                 <span
                                   key={badge}
-                                  className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
+                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${getBadgeClass(badge)}`}
                                 >
                                   {badge}
                                 </span>
@@ -524,14 +536,17 @@ export default function ItemsList({
                             </div>
 
                             {location && (
-                              <p className="mt-1 truncate text-sm text-gray-500">
+                              <p
+                                title={location}
+                                className="mt-1 truncate text-sm text-gray-500"
+                              >
                                 {location}
                               </p>
                             )}
                           </div>
                         </div>
 
-                        <div className="ml-4 flex flex-shrink-0 flex-col items-center gap-2 text-right">
+                        <div className="ml-4 flex flex-shrink-0 flex-col items-center gap-2 text-right lg:ml-6 lg:w-32 lg:items-end">
                           {item.do_kupienia && (
                             <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
                               Do kupienia
@@ -540,7 +555,7 @@ export default function ItemsList({
 
                           <div>
                             {item.cena_zakupu && (
-                              <p className="text-sm font-medium text-gray-700">
+                              <p className="whitespace-nowrap text-sm font-semibold text-gray-800">
                                 {item.cena_zakupu}
                                 {item.cena_zakupu_do
                                   ? `–${item.cena_zakupu_do}`
@@ -550,7 +565,7 @@ export default function ItemsList({
                             )}
 
                             {item.wartosc_aktualna && (
-                              <p className="text-xs text-gray-500">
+                              <p className="whitespace-nowrap text-xs text-gray-500">
                                 Obecna: {item.wartosc_aktualna} PLN
                               </p>
                             )}
