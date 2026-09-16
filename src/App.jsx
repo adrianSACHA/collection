@@ -205,6 +205,11 @@ function App() {
     setAddMode(nextAddMode)
     setMode('dodaj')
     setIsDetailView(false)
+    // Formularz to osobny widok - przy wejściu zamykamy mobilne sheety,
+    // żeby w danej chwili otwarty był tylko jeden element.
+    setIsAddSheetOpen(false)
+    setIsMoreSheetOpen(false)
+    setIsMobileFiltersOpen(false)
   }
 
   const backToListAfterSave = () => {
@@ -234,9 +239,17 @@ function App() {
     setIsMobileFiltersOpen(true)
   }
 
-  // "Dodaj": uruchamia istniejący formularz (ItemForm) dla wybranego typu.
-  const startAddItem = (type) => {
+  // "Dodaj": z dolnego menu otwiera SZYBKI formularz (QuickAddForm) dla
+  // wybranego typu. Pełny ItemForm otwiera się dopiero po kliknięciu
+  // przycisku "Pełny formularz" (na desktopie lub wewnątrz szybkiego formularza).
+  const startQuickAdd = (type) => {
     if (type !== view) switchType(type)
+    goToAdd('szybki')
+  }
+
+  // "Pełny formularz": przełącza szybki formularz na pełny ItemForm
+  // dla aktualnego typu (fixedType = view).
+  const openFullForm = () => {
     goToAdd('pelny')
   }
 
@@ -542,6 +555,7 @@ function App() {
                 fixedType={view}
                 onSaved={backToListAfterSave}
                 onCancel={backToListAfterSave}
+                onOpenFullForm={openFullForm}
               />
             </Suspense>
           ) : (
@@ -557,21 +571,23 @@ function App() {
 
         {/* Dolna nawigacja mobilna (< lg) + mobilne bottom sheety.
             Widoczne tylko na mobile; na desktopie nic się nie zmienia. */}
-        <MobileBottomNav
-          activeTab={activeMobileTab}
-          onOpenCollection={openCollection}
-          onOpenFilters={openMobileFilters}
-          onOpenAdd={() => setIsAddSheetOpen(true)}
-          onOpenMore={() => setIsMoreSheetOpen(true)}
-          addButtonRef={addButtonRef}
-          moreButtonRef={moreButtonRef}
-        />
+        {mode !== 'dodaj' && (
+          <MobileBottomNav
+            activeTab={activeMobileTab}
+            onOpenCollection={openCollection}
+            onOpenFilters={openMobileFilters}
+            onOpenAdd={() => setIsAddSheetOpen(true)}
+            onOpenMore={() => setIsMoreSheetOpen(true)}
+            addButtonRef={addButtonRef}
+            moreButtonRef={moreButtonRef}
+          />
+        )}
 
         <AddItemSheet
           isOpen={isAddSheetOpen}
           onClose={() => setIsAddSheetOpen(false)}
-          onAddCoin={() => startAddItem('moneta')}
-          onAddBanknote={() => startAddItem('banknot')}
+          onAddCoin={() => startQuickAdd('moneta')}
+          onAddBanknote={() => startQuickAdd('banknot')}
           triggerRef={addButtonRef}
         />
 

@@ -6,12 +6,14 @@ import { inputClass } from './item-form/formHelpers'
 import { uploadCoinPhotos } from '../lib/uploadPhoto'
 import { insertItem } from '../lib/itemsApi'
 
-export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
+export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullForm }) {
   const [typ, setTyp] = useState(fixedType || 'moneta')
   const [kraj, setKraj] = useState('')
   const [nominal, setNominal] = useState('')
   const [rok, setRok] = useState('')
   const [dataWydania, setDataWydania] = useState('')
+  const [seria, setSeria] = useState('')
+  const [knSeria, setKnSeria] = useState('')
   const [unikat, setUnikat] = useState(false)
   const [unc, setUnc] = useState(false)
   const [bardzoRzadki, setBardzoRzadki] = useState(false)
@@ -42,6 +44,8 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setNominal('')
     setRok('')
     setDataWydania('')
+    setSeria('')
+    setKnSeria('')
     setUnikat(false)
     setUnc(false)
     setBardzoRzadki(false)
@@ -91,7 +95,11 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
     setSuccess(false)
 
     if (!kraj.trim() || !nominal.trim()) {
-      setError('Podaj przynajmniej kraj i nominał.')
+      setError(
+        typ === 'banknot'
+          ? 'Podaj przynajmniej emitenta i nominał.'
+          : 'Podaj przynajmniej kraj i nominał.'
+      )
       return
     }
     if (!typ) {
@@ -108,6 +116,9 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
         nominal: nominal.trim(),
         rok: rok ? parseInt(rok, 10) : null,
         data_wydania: dataWydania || null,
+        // Banknot: seria i KN / numer (brak dla monet).
+        seria: typ === 'banknot' ? seria.trim() || null : null,
+        kn_seria: typ === 'banknot' ? knSeria.trim() || null : null,
         unikat,
         unc,
         bardzo_rzadki: bardzoRzadki,
@@ -138,13 +149,27 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
   return (
     <form onSubmit={(e) => handleSubmit(e, 'default')} className="min-h-screen p-4 lg:p-8 lg:bg-gray-50">
       <div className="mx-auto max-w-md lg:max-w-6xl">
-        <h2 className="mb-6 text-xl font-semibold text-gray-800">
-          {fixedType === 'banknot'
-            ? 'Szybko dodaj banknot'
-            : fixedType === 'moneta'
-              ? 'Szybko dodaj monetę'
-              : 'Szybko dodaj'}
-        </h2>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {fixedType === 'banknot'
+              ? 'Szybko dodaj banknot'
+              : fixedType === 'moneta'
+                ? 'Szybko dodaj monetę'
+                : 'Szybko dodaj'}
+          </h2>
+
+          {/* Pełny ItemForm otwiera się DOPIERO tutaj (albo z desktopowego
+              przycisku) - nigdy bezpośrednio z AddItemSheet. */}
+          {onOpenFullForm && (
+            <button
+              type="button"
+              onClick={onOpenFullForm}
+              className="flex-shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            >
+              Pełny formularz
+            </button>
+          )}
+        </div>
 
         {/* Mobile: single column | Desktop: 2 columns */}
         <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:gap-8">
@@ -218,7 +243,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                   setKraj(e.target.value)
                   clearFeedback()
                 }}
-                placeholder={typ === 'banknot' ? 'np. Narodowy Bank Polski' : 'np. Polska'}
+                placeholder={typ === 'banknot' ? 'np. Darmstadt' : 'np. Polska'}
                 className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
               />
             </FormField>
@@ -253,8 +278,42 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
               </FormField>
             </div>
 
-            {/* Cechy (flagi) - niezależne checkboxy */}
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3">
+            {/* Banknot: seria oraz KN / numer (opcjonalne). */}
+            {typ === 'banknot' && (
+              <div className="flex gap-3">
+                <FormField label="Seria" htmlFor="seria" className="flex-1">
+                  <input
+                    id="seria"
+                    type="text"
+                    value={seria}
+                    onChange={(e) => {
+                      setSeria(e.target.value)
+                      clearFeedback()
+                    }}
+                    placeholder="np. A"
+                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                  />
+                </FormField>
+
+                <FormField label="KN / numer" htmlFor="kn-seria" className="flex-1">
+                  <input
+                    id="kn-seria"
+                    type="text"
+                    value={knSeria}
+                    onChange={(e) => {
+                      setKnSeria(e.target.value)
+                      clearFeedback()
+                    }}
+                    placeholder="np. 123456"
+                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                  />
+                </FormField>
+              </div>
+            )}
+
+            {/* Cechy (flagi) - niezależne checkboxy (moneta) */}
+            {typ === 'moneta' && (
+              <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3">
               <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
@@ -308,10 +367,11 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                 <span className="text-sm font-medium text-gray-700">Rzadki</span>
               </label>
             </div>
+            )}
 
-            {/* Cena od-do */}
-            <div className="flex gap-3">
-              <FormField label="Cena od (PLN)" htmlFor="cena-zakupu" className="flex-1">
+            {/* Banknot: pojedyncza cena zakupu (opcjonalna). */}
+            {typ === 'banknot' && (
+              <FormField label="Cena zakupu (PLN)" htmlFor="cena-zakupu">
                 <input
                   id="cena-zakupu"
                   type="number"
@@ -322,30 +382,50 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType }) {
                   className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
                 />
               </FormField>
+            )}
 
-              <FormField label="Cena do (PLN)" htmlFor="cena-zakupu-do" className="flex-1">
-                <input
-                  id="cena-zakupu-do"
-                  type="number"
-                  step="0.01"
-                  value={cenaZakupuDo}
-                  onChange={(e) => setCenaZakupuDo(e.target.value)}
-                  placeholder="np. 150.00"
-                  className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+            {/* Moneta: cena od-do (opcjonalna). */}
+            {typ === 'moneta' && (
+              <div className="flex gap-3">
+                <FormField label="Cena od (PLN)" htmlFor="cena-zakupu" className="flex-1">
+                  <input
+                    id="cena-zakupu"
+                    type="number"
+                    step="0.01"
+                    value={cenaZakupu}
+                    onChange={(e) => setCenaZakupu(e.target.value)}
+                    placeholder="np. 70.00"
+                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                  />
+                </FormField>
+
+                <FormField label="Cena do (PLN)" htmlFor="cena-zakupu-do" className="flex-1">
+                  <input
+                    id="cena-zakupu-do"
+                    type="number"
+                    step="0.01"
+                    value={cenaZakupuDo}
+                    onChange={(e) => setCenaZakupuDo(e.target.value)}
+                    placeholder="np. 150.00"
+                    className={`${inputClass} border-gray-300 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300`}
+                  />
+                </FormField>
+              </div>
+            )}
+
+            {/* Uwagi (moneta) */}
+            {typ === 'moneta' && (
+              <FormField label="Uwagi" htmlFor="uwagi">
+                <textarea
+                  id="uwagi"
+                  value={uwagi}
+                  onChange={(e) => setUwagi(e.target.value)}
+                  placeholder="Opcjonalne uwagi o stanie, pochodzeniu itd."
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                 />
               </FormField>
-            </div>
-
-            <FormField label="Uwagi" htmlFor="uwagi">
-              <textarea
-                id="uwagi"
-                value={uwagi}
-                onChange={(e) => setUwagi(e.target.value)}
-                placeholder="Opcjonalne uwagi o stanie, pochodzeniu itd."
-                rows={3}
-                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
-              />
-            </FormField>
+            )}
           </div>
 
           {/* Prawa kolumna: na desktopie trzyma pola zaawansowane mogłyby być tu;

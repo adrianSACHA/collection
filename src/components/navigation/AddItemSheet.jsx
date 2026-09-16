@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react'
 
 // Mobilny bottom sheet wyboru rodzaju przedmiotu.
 // NIE tworzy drugiego formularza - po wyborze wywołuje przekazane
-// callbacki (onAddCoin / onAddBanknote), które uruchamiają istniejący
-// mechanizm dodawania (ItemForm + goToAdd + fixedType) z App.jsx.
+// callbacki (onAddCoin / onAddBanknote), które otwierają SZYBKI formularz
+// (QuickAddForm z fixedType = moneta/banknot). Pełny ItemForm otwiera się
+// dopiero po kliknięciu "Pełny formularz" (desktop lub szybki formularz).
 
 const TITLE_ID = 'add-item-sheet-title'
 
