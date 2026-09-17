@@ -33,28 +33,21 @@ function getRarityValue(values) {
     return 'zwykly'
 }
 
+// Podgląd buduje identyfikator banknotu w tej samej kolejności co lista
+// (formatBanknoteSeries): nadruk -> FZ -> seria -> [✻] KN [✻] -> litera końcowa.
+// Gwiazdka pokazuje się wyłącznie przy istniejącym numerze KN.
 function getSeriesPreview(values) {
-    const parts = []
+    const kn = values.kn_seria?.trim() || ''
 
-    if (values.seria?.trim()) {
-        parts.push(values.seria.trim())
-    }
-
-    if (values.gwiazdka_przed) {
-        parts.push('✻')
-    }
-
-    if (values.kn_seria?.trim()) {
-        parts.push(values.kn_seria.trim())
-    }
-
-    if (values.gwiazdka_za) {
-        parts.push('✻')
-    }
-
-    if (values.koncowka_serii?.trim()) {
-        parts.push(values.koncowka_serii.trim())
-    }
+    const parts = [
+        values.nadruk?.trim(),
+        values.kod_drukarni?.trim(),
+        values.seria?.trim(),
+        values.gwiazdka_przed && kn ? '✻' : null,
+        kn || null,
+        values.gwiazdka_za && kn ? '✻' : null,
+        values.koncowka_serii?.trim(),
+    ].filter(Boolean)
 
     return parts.join(' ')
 }
@@ -334,19 +327,19 @@ export default function ItemForm({
                                                                                 />
                                     </FormField>
 
-                                    <FormField
-                                        label="FZ"
+                                                                        <FormField
+                                        label="BZ - FZ"
                                         htmlFor="kod_drukarni"
-                                        hint="Kod drukarni"
+                                        hint="Nr arkusza - kod drukarni"
                                     >
-                                                                                <input
+                                        <input
                                             id="kod_drukarni"
                                             type="text"
                                             value={v.kod_drukarni || ''}
                                             onChange={(event) =>
                                                 setField('kod_drukarni', event.target.value)
                                             }
-                                            placeholder="np. WZP"
+                                            placeholder="np. 12 - WZP"
                                             maxLength="20"
                                             className={`${inputClass} border-gray-300`}
                                         />
@@ -465,7 +458,7 @@ export default function ItemForm({
 
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <FormField
-                                        label="Udr.-BST. / nadruk"
+                                        label="Udr.-Bst. / nadruk"
                                         htmlFor="nadruk"
                                         hint="Opcjonalny opis lub nadruk"
                                     >

@@ -131,9 +131,9 @@ export default function ItemDetail({
           label={isBanknote ? 'Data emisji' : 'Data wydania'}
           value={item.data_wydania}
         />
-        <DetailRow label="Udr.-BST." value={item.nadruk} />
+        <DetailRow label="Udr.-Bst." value={item.nadruk} />
         <DetailRow label="Seria" value={item.seria} />
-        <DetailRow label="FZ" value={item.kod_drukarni} />
+        <DetailRow label="BZ - FZ" value={item.kod_drukarni} />
         <DetailRow label="KN" value={formatKnSeria()} />
         {/* Opis znaku wodnego pokazujemy w szczegółach tylko, gdy nie ma zdjęcia
             (w przeciwnym razie byłby zdublowany - opis jest już przy miniaturze). */}
