@@ -5,7 +5,8 @@ import { getCroppedImg } from '../../lib/cropImage'
 
 /**
  * Modal kadrowania (opcjonalny). Pokazuje wybrane zdjęcie z możliwością
- * przesuwania/zoom, a po zatwierdzeniu zwraca przycięty plik (JPEG).
+ * przesuwania, zoom oraz obrotu skokowego o 90° (w lewo/prawo), a po
+ * zatwierdzeniu zwraca przycięty plik (JPEG) z „wypalonym" obrotem.
  *
  * Props:
  *  - imageSrc: string (URL wybranego pliku)
@@ -16,6 +17,8 @@ import { getCroppedImg } from '../../lib/cropImage'
 export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  // Obrót w stopniach - sterowany przyciskami ±90° (zgodny z react-easy-crop).
+  const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState(null)
@@ -46,7 +49,7 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
     try {
       setProcessing(true)
       setError(null)
-      const blob = await getCroppedImg(imageSrc, croppedAreaPixels)
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels, rotation)
       onConfirm?.(blob)
     } catch (err) {
       console.error('Błąd kadrowania:', err)
@@ -81,9 +84,11 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
           image={imageSrc}
           crop={crop}
           zoom={zoom}
+          rotation={rotation}
           aspect={aspect}
           onCropChange={setCrop}
           onZoomChange={setZoom}
+          onRotationChange={setRotation}
           onCropComplete={onCropComplete}
           showGrid
           objectFit="contain"
@@ -95,6 +100,32 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
         {error && (
           <p className="text-center text-sm text-red-400">{error}</p>
         )}
+
+        <div className="flex items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => setRotation((value) => value - 90)}
+            aria-label="Obróć w lewo o 90 stopni"
+            title="Obróć w lewo o 90°"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition-colors hover:bg-white/20"
+          >
+            ⟲
+          </button>
+
+          <span className="w-16 text-center text-sm tabular-nums text-white">
+            {((rotation % 360) + 360) % 360}°
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setRotation((value) => value + 90)}
+            aria-label="Obróć w prawo o 90 stopni"
+            title="Obróć w prawo o 90°"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition-colors hover:bg-white/20"
+          >
+            ⟳
+          </button>
+        </div>
 
         <div className="flex items-center gap-3 text-white">
           <span className="text-xs">Zoom</span>

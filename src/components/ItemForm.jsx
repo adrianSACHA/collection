@@ -207,22 +207,22 @@ export default function ItemForm({
                             </FormField>
 
                             {isBanknote ? (
-                                <FormField
+                                                                <FormField
                                     label="Emitent"
-                                    htmlFor="miasto_wydania"
+                                    htmlFor="kraj"
                                     required
-                                    error={fieldErrors.miasto_wydania}
+                                    error={fieldErrors.kraj}
                                     hint="Np. Darmstadt"
                                 >
                                     <input
-                                        id="miasto_wydania"
+                                        id="kraj"
                                         type="text"
-                                        value={v.miasto_wydania || ''}
+                                        value={v.kraj || ''}
                                         onChange={(event) =>
-                                            setField('miasto_wydania', event.target.value)
+                                            setField('kraj', event.target.value)
                                         }
                                         placeholder="np. Darmstadt"
-                                        className={`${inputClass} ${fieldErrors.miasto_wydania
+                                        className={`${inputClass} ${fieldErrors.kraj
                                                 ? 'border-red-500'
                                                 : 'border-gray-300'
                                             }`}

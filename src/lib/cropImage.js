@@ -15,15 +15,47 @@ function loadImage(src) {
 }
 
 /**
+ * Zamienia stopnie na radiany.
+ */
+function getRadianAngle(degreeValue) {
+  return (degreeValue * Math.PI) / 180
+}
+
+/**
+ * Wymiary bounding boxa obrazu obróconego o podany kąt (w stopniach).
+ * Po obrocie o 90°/270° szerokość i wysokość zamieniają się miejscami.
+ */
+function rotateSize(width, height, rotation) {
+  const rotRad = getRadianAngle(rotation)
+
+  return {
+    width:
+      Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height:
+      Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+  }
+}
+
+/**
  * Przycina obraz do wskazanego obszaru (w pikselach oryginału)
  * i zwraca Blob (JPEG). Oryginał pozostaje nienaruszony.
  *
+ * Obsługuje obrót (rotation) - najpierw obracamy cały obraz na pomocniczym
+ * canvasie (z uwzględnieniem bounding boxa), a dopiero potem wycinamy obszar
+ * kadru. Dzięki temu zapisany plik wygląda dokładnie tak jak podgląd.
+ *
  * @param {string} imageSrc - URL obrazu (np. z URL.createObjectURL)
  * @param {{ x: number, y: number, width: number, height: number }} croppedAreaPixels
+ * @param {number} [rotation=0] - obrót w stopniach (zgodny z react-easy-crop)
  * @param {number} [quality=0.92] - jakość JPEG (0-1)
  * @returns {Promise<Blob>}
  */
-export async function getCroppedImg(imageSrc, croppedAreaPixels, quality = 0.92) {
+export async function getCroppedImg(
+  imageSrc,
+  croppedAreaPixels,
+  rotation = 0,
+  quality = 0.92
+) {
   const image = await loadImage(imageSrc)
 
   const canvas = document.createElement('canvas')
@@ -33,11 +65,37 @@ export async function getCroppedImg(imageSrc, croppedAreaPixels, quality = 0.92)
     throw new Error('Nie można utworzyć kontekstu canvas (brak wsparcia przeglądarki).')
   }
 
-  canvas.width = Math.round(croppedAreaPixels.width)
-  canvas.height = Math.round(croppedAreaPixels.height)
+  // 1. Rysujemy CAŁY obraz na canvasie w rozmiarze jego obróconego bounding boxa.
+  const rotRad = getRadianAngle(rotation)
+  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
+    image.width,
+    image.height,
+    rotation
+  )
 
-  ctx.drawImage(
-    image,
+  canvas.width = Math.round(bBoxWidth)
+  canvas.height = Math.round(bBoxHeight)
+
+  // Przesuwamy środek układu do środka canvasa, obracamy i rysujemy obraz
+  // wyśrodkowany (stąd dwa translate o połowę wymiarów).
+  ctx.translate(bBoxWidth / 2, bBoxHeight / 2)
+  ctx.rotate(rotRad)
+  ctx.translate(-image.width / 2, -image.height / 2)
+  ctx.drawImage(image, 0, 0)
+
+  // 2. Wycinamy właściwy obszar kadru z obróconego canvasa.
+  const croppedCanvas = document.createElement('canvas')
+  const croppedCtx = croppedCanvas.getContext('2d')
+
+  if (!croppedCtx) {
+    throw new Error('Nie można utworzyć kontekstu canvas (brak wsparcia przeglądarki).')
+  }
+
+  croppedCanvas.width = Math.round(croppedAreaPixels.width)
+  croppedCanvas.height = Math.round(croppedAreaPixels.height)
+
+  croppedCtx.drawImage(
+    canvas,
     Math.round(croppedAreaPixels.x),
     Math.round(croppedAreaPixels.y),
     Math.round(croppedAreaPixels.width),
@@ -49,7 +107,7 @@ export async function getCroppedImg(imageSrc, croppedAreaPixels, quality = 0.92)
   )
 
   return new Promise((resolve, reject) => {
-    canvas.toBlob(
+    croppedCanvas.toBlob(
       (blob) => {
         if (!blob) {
           reject(new Error('Nie udało się wygenerować przyciętego obrazu.'))

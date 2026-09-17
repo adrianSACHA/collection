@@ -98,7 +98,10 @@ export function validateItemForm(values) {
   const errors = {}
 
   if (!values.kraj.trim()) {
-    errors.kraj = 'Kraj jest wymagany.'
+    errors.kraj =
+      values.typ === 'banknot'
+        ? 'Emitent jest wymagany.'
+        : 'Kraj jest wymagany.'
   }
 
   if (!values.nominal.trim()) {
