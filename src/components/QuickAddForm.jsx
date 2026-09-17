@@ -5,6 +5,7 @@ import FormField from './item-form/FormField'
 import { inputClass } from './item-form/formHelpers'
 import { uploadCoinPhotos } from '../lib/uploadPhoto'
 import { insertItem } from '../lib/itemsApi'
+import { useToast } from './toast/toastContext'
 
 export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullForm }) {
   const [typ, setTyp] = useState(fixedType || 'moneta')
@@ -29,6 +30,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
   const [savingMode, setSavingMode] = useState(null) // 'default' | 'addAnother'
 
   const nominalInputRef = useRef(null)
+  const toast = useToast()
 
   useEffect(() => {
     if (!success) return
@@ -66,15 +68,21 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
       setSuccess(true)
 
       if (mode === 'addAnother') {
+        toast.success('Zapisano. Możesz dodać kolejny.')
         resetForm({ keepType: true })
         setTimeout(() => setSuccess(false), 2000)
         nominalInputRef.current?.focus()
       } else {
+        toast.success(typ === 'banknot' ? 'Banknot dodany!' : 'Moneta dodana!')
         resetForm()
         if (onSaved) onSaved(item)
       }
     },
-    onError: (err) => setError(err.message || 'Wystąpił nieznany błąd podczas zapisu.'),
+    onError: (err) => {
+      const message = err.message || 'Wystąpił nieznany błąd podczas zapisu.'
+      setError(message)
+      toast.error(message)
+    },
   })
 
   // Zdjęcie jest całkowicie opcjonalne - wiele pozycji (np. woreczki obiegowe)
@@ -92,15 +100,18 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
     setSuccess(false)
 
     if (!kraj.trim() || !nominal.trim()) {
-      setError(
+      const message =
         typ === 'banknot'
           ? 'Podaj przynajmniej emitenta i nominał.'
           : 'Podaj przynajmniej kraj i nominał.'
-      )
+      setError(message)
+      toast.error(message)
       return
     }
     if (!typ) {
-      setError('Wybierz typ: moneta lub banknot.')
+      const message = 'Wybierz typ: moneta lub banknot.'
+      setError(message)
+      toast.error(message)
       return
     }
 

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import LoadingFallback from './LoadingFallback'
 import ItemDetail from './items-list/ItemDetail'
 import { exportItemsToCsv } from './items-list/exportCsv'
+import { useToast } from './toast/toastContext'
 
 const ItemForm = lazy(() => import('./ItemForm'))
 
@@ -96,6 +97,7 @@ export default function ItemsList({
   const [selectedPhotos, setSelectedPhotos] = useState({})
   const [thumbnailsRefreshKey, setThumbnailsRefreshKey] = useState(0)
 
+  const toast = useToast()
   const items = useMemo(() => filteredItems || [], [filteredItems])
   const totalCount = items.length
 
@@ -171,12 +173,15 @@ export default function ItemsList({
     mutationFn: (itemId) => deleteItem(itemId),
     onSuccess: () => {
       onItemsChanged?.()
+      toast.success('Przedmiot usunięty.')
       setSelectedItem(null)
       setConfirmDelete(false)
       onModeChange?.(false)
     },
     onError: (error) => {
-      setActionError(error.message || 'Nie udało się usunąć przedmiotu.')
+      const message = error.message || 'Nie udało się usunąć przedmiotu.'
+      setActionError(message)
+      toast.error(message)
     },
   })
 
@@ -205,6 +210,7 @@ export default function ItemsList({
 
   const handleDuplicated = () => {
     onItemsChanged?.()
+    toast.success('Dodano duplikat.')
     setDuplicateItem(null)
     setSelectedItem(null)
     setThumbnailsRefreshKey((key) => key + 1)

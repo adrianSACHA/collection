@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { uploadPhoto, deletePhoto } from '../../lib/uploadPhoto'
+import { useToast } from '../toast/toastContext'
 import {
   buildPayload,
   validateItemForm,
@@ -41,6 +42,7 @@ export function useItemForm({
   const [fieldErrors, setFieldErrors] = useState({})
 
   const nominalInputRef = useRef(null)
+  const toast = useToast()
 
   const setField = useCallback((name, value) => {
     setValues((previous) => ({
@@ -176,9 +178,10 @@ export function useItemForm({
       } catch (err) {
         console.error('Błąd wgrywania zdjęć:', err)
 
-        setPhotoError(
-          `Dane zapisane, ale nie udało się wgrać zdjęć: ${err.message}`
-        )
+        const message = `Dane zapisane, ale nie udało się wgrać zdjęć: ${err.message}`
+
+        setPhotoError(message)
+        toast.error(message)
       } finally {
         setPhotoUploading(false)
       }
@@ -188,6 +191,7 @@ export function useItemForm({
       rewersFile,
       znakWodnyFile,
       loadPhotos,
+      toast,
     ]
   )
 
@@ -261,6 +265,9 @@ export function useItemForm({
       setFieldErrors(errors)
 
       if (Object.keys(errors).length > 0) {
+        toast.error(
+          Object.values(errors)[0] || 'Uzupełnij wymagane pola.'
+        )
         return
       }
 
@@ -281,6 +288,7 @@ export function useItemForm({
           if (updateError) throw updateError
 
           setSuccess(true)
+          toast.success('Przedmiot zaktualizowany!')
 
           await uploadSelectedPhotos(itemId)
 
@@ -315,6 +323,7 @@ export function useItemForm({
         await uploadSelectedPhotos(data.id)
 
         if (mode === 'addAnother') {
+          toast.success('Przedmiot dodany. Możesz dodać kolejny.')
           resetForm({ keepType: true })
 
           setTimeout(() => {
@@ -325,6 +334,7 @@ export function useItemForm({
           return
         }
 
+        toast.success('Przedmiot dodany!')
         resetForm()
         onSaved?.(data)
       } catch (err) {
@@ -341,6 +351,7 @@ export function useItemForm({
         }
 
         setError(errorMessage)
+        toast.error(errorMessage)
       } finally {
         setLoading(false)
         setSavingMode(null)
@@ -354,6 +365,7 @@ export function useItemForm({
       onSaved,
       uploadSelectedPhotos,
       resetForm,
+      toast,
     ]
   )
 
