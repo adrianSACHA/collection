@@ -231,6 +231,7 @@ export default function ItemsList({
 
   const handleSaved = (updatedItem) => {
     onItemsChanged?.()
+    toast.success('Przedmiot zaktualizowany!')
     setSelectedItem(updatedItem)
     setIsEditing(false)
     setThumbnailsRefreshKey((key) => key + 1)
