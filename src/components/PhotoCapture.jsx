@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import CropModal from './item-form/CropModal'
 
 export default function PhotoCapture({ onPhotosReady, aspect }) {
@@ -6,6 +6,26 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
   const [rewers, setRewers] = useState(null)
   const [activeSide, setActiveSide] = useState('awers')
   const [cropping, setCropping] = useState(null) // 'awers' | 'rewers' | null
+
+  // Trzymamy bieżące zdjęcia w ref, żeby cleanup przy odmontowaniu zwalniał
+  // aktualne object URL-e (podglądy), a nie te z pierwszego renderu.
+  const photosRef = useRef({ awers, rewers })
+
+  useEffect(() => {
+    photosRef.current = { awers, rewers }
+  }, [awers, rewers])
+
+  useEffect(() => {
+    return () => {
+      const { awers: currentAwers, rewers: currentRewers } = photosRef.current
+      if (currentAwers?.previewUrl) URL.revokeObjectURL(currentAwers.previewUrl)
+      if (currentRewers?.previewUrl) URL.revokeObjectURL(currentRewers.previewUrl)
+    }
+  }, [])
+
+  const revokePhotoUrl = (photo) => {
+    if (photo?.previewUrl) URL.revokeObjectURL(photo.previewUrl)
+  }
 
   // Zgłaszamy komponentowi nadrzędnemu stan zdjęć. Awers jest wymagany do zapisu
   // (uploadPhoto i tak pomija brakujące strony), rewers opcjonalny.
@@ -22,6 +42,9 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
     e.target.value = ''
 
     if (!file) return
+
+    // Podmiana zdjęcia po tej samej stronie: zwalniamy poprzedni podgląd.
+    revokePhotoUrl(side === 'awers' ? awers : rewers)
 
     const previewUrl = URL.createObjectURL(file)
     const newPhoto = { file, previewUrl }
@@ -44,6 +67,8 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
   }
 
   const retakePhoto = (side) => {
+    revokePhotoUrl(side === 'awers' ? awers : rewers)
+
     if (side === 'awers') {
       setAwers(null)
       onPhotosReady?.(null)
@@ -57,6 +82,9 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
   const handleCropConfirm = (blob) => {
     const side = cropping
     if (!side) return
+
+    // Zwalniamy poprzedni podgląd tej strony przed podmianą na przycięty.
+    revokePhotoUrl(side === 'awers' ? awers : rewers)
 
     const croppedFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
     const previewUrl = URL.createObjectURL(croppedFile)

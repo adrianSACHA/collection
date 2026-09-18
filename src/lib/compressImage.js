@@ -1,18 +1,17 @@
+import { canvasToBlob } from './canvasToBlob'
+
 /**
- * Kompresuje zdjęcie w przeglądarce przed uploadem (Canvas API).
- * Zmniejsza rozdzielczość do maxDimension (dłuższa strona) i koduje jako JPEG
- * z podaną jakością. Dla zdjęć monet/banknotów 1000px + quality 0.6 daje
- * bezpieczny margines: detale stempla/druku nadal czytelne przy powiększeniu,
- * plik spada z ~3-5 MB do ~70-90 KB (przy ~2000 pozycjach x 2 zdjęcia to
- * orientacyjnie 280-360 MB, bezpiecznie w granicach darmowego 1 GB limitu
- * Supabase Storage, ze znacznym zapasem na dalszy rozwój kolekcji).
+ * Kompresja przez Canvas API (fallback bez zależności, używany przez
+ * compressForUpload, gdy biblioteka jest niedostępna).
+ * Zmniejsza zdjęcie do maxDimension (dłuższa strona) i koduje jako WebP, a gdy
+ * przeglądarka nie umie WebP - jako JPEG.
  *
  * @param {File} file - oryginalny plik (z inputa/kamery)
- * @param {number} maxDimension - maksymalna szerokość/wysokość w px (domyślnie 1000)
- * @param {number} quality - jakość JPEG 0-1 (domyślnie 0.6)
- * @returns {Promise<File>} nowy, skompresowany plik (zawsze .jpg)
+ * @param {number} maxDimension - maksymalna szerokość/wysokość w px
+ * @param {number} quality - jakość 0-1
+ * @returns {Promise<File>} skompresowany plik (.webp albo .jpg)
  */
-export function compressImage(file, maxDimension = 1000, quality = 0.6) {
+export function compressImage(file, maxDimension = 1280, quality = 0.7) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith('image/')) {
       reject(new Error('compressImage: plik nie jest obrazem'))
@@ -45,32 +44,44 @@ export function compressImage(file, maxDimension = 1000, quality = 0.6) {
 
 
       const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('compressImage: brak kontekstu canvas'))
+        return
+      }
+
+      // Lepsza jakość skalowania w dół - mniej rozmycia przy zdjęciach
+            // z telefonu (np. 4000 px -> 1000 px) niż domyślne ustawienie.
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       ctx.drawImage(img, 0, 0, width, height)
 
+      // Najpierw WebP; gdy przeglądarka go nie umie, canvasToBlob zwróci inny
+      // typ (np. image/png) i wtedy kodujemy JPEG - bezpieczny, uniwersalny format.
+      canvasToBlob(canvas, 'image/webp', quality)
+        .then(async (webpBlob) => {
+          let blob = webpBlob
 
-      canvas.toBlob(
-        (blob) => {
-          URL.revokeObjectURL(objectUrl)
-
-
-          if (!blob) {
-            reject(new Error('compressImage: nie udało się zakodować obrazu'))
-            return
+          if (blob.type !== 'image/webp') {
+            blob = await canvasToBlob(canvas, 'image/jpeg', quality)
           }
 
+          URL.revokeObjectURL(objectUrl)
 
           const originalName = file.name.replace(/\.[^.]+$/, '')
-          const compressedFile = new File([blob], `${originalName}.jpg`, {
-            type: 'image/jpeg',
+          const extension = blob.type === 'image/webp' ? 'webp' : 'jpg'
+          const compressedFile = new File([blob], `${originalName}.${extension}`, {
+            type: blob.type,
             lastModified: Date.now(),
           })
 
-
           resolve(compressedFile)
-        },
-        'image/jpeg',
-        quality
-      )
+        })
+        .catch(() => {
+          URL.revokeObjectURL(objectUrl)
+          reject(new Error('compressImage: nie udało się zakodować obrazu'))
+        })
     }
 
 

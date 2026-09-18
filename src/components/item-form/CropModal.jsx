@@ -107,9 +107,21 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
             onClick={() => setRotation((value) => value - 90)}
             aria-label="Obróć w lewo o 90 stopni"
             title="Obróć w lewo o 90°"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition-colors hover:bg-white/20"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
           >
-            ⟲
+            <svg
+              aria-hidden="true"
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+            >
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
           </button>
 
           <span className="w-16 text-center text-sm tabular-nums text-white">
@@ -121,9 +133,21 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
             onClick={() => setRotation((value) => value + 90)}
             aria-label="Obróć w prawo o 90 stopni"
             title="Obróć w prawo o 90°"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition-colors hover:bg-white/20"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
           >
-            ⟳
+            <svg
+              aria-hidden="true"
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+            >
+              <path d="M23 4v6h-6" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
           </button>
         </div>
 

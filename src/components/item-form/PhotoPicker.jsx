@@ -62,7 +62,13 @@ export default function PhotoPicker({
   const handleCropConfirm = (blob) => {
     const croppedFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
 
-    revoke(previewUrl)
+    // Zwalniamy wyłącznie poprzedni PODGLĄD. Przed pierwszym kadrowaniem podgląd
+    // pokrywa się z oryginałem, więc NIE wolno go unieważnić - inaczej kolejne
+    // „Przytnij" dostałoby martwy URL. Oryginał zostaje, by móc kadrować wielokrotnie.
+    if (previewUrl && previewUrl !== originalUrl) {
+      revoke(previewUrl)
+    }
+
     const newUrl = URL.createObjectURL(croppedFile)
 
     setSelectedFile(croppedFile)

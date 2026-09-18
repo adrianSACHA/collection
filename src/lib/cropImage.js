@@ -1,6 +1,8 @@
 // Czyste funkcje przycinania obrazu (canvas) - bez zależności od Reacta.
 // Używane przez modal kadrowania (CropModal) do wygenerowania przyciętego pliku.
 
+import { canvasToBlob } from './canvasToBlob'
+
 /**
  * Wczytuje obraz z URL (np. obiekt URL z wybranego pliku) do elementu Image.
  */
@@ -106,17 +108,6 @@ export async function getCroppedImg(
     Math.round(croppedAreaPixels.height)
   )
 
-  return new Promise((resolve, reject) => {
-    croppedCanvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error('Nie udało się wygenerować przyciętego obrazu.'))
-          return
-        }
-        resolve(blob)
-      },
-      'image/jpeg',
-      quality
-    )
-  })
+  // canvasToBlob ma fallback na toDataURL - działa też na starszych telefonach.
+  return canvasToBlob(croppedCanvas, 'image/jpeg', quality)
 }
