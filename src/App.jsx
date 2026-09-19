@@ -14,7 +14,7 @@ import AuthGate from './components/AuthGate'
 import LoadingFallback from './components/LoadingFallback'
 import MobileBottomNav from './components/navigation/MobileBottomNav'
 import DesktopSidebar from './components/navigation/DesktopSidebar'
-import AddItemSheet from './components/navigation/AddItemSheet'
+import CollectionSwitcherSheet from './components/navigation/CollectionSwitcherSheet'
 import MoreSheet from './components/navigation/MoreSheet'
 import { exportItemsToCsv } from './components/items-list/exportCsv'
 import { fetchAllItemsForExport } from './lib/itemsApi'
@@ -122,8 +122,8 @@ function App() {
     moneta: null,
   })
 
-  // Mobilne bottom sheety (Dodaj / Więcej) - jedyne miejsce trzymające ich stan.
-  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
+  // Mobilne bottom sheety (Kolekcja / Więcej) - jedyne miejsce trzymające ich stan.
+  const [isCollectionSheetOpen, setIsCollectionSheetOpen] = useState(false)
   const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false)
   // Zmiana klucza resetuje wewnętrzny stan ItemsList (np. powrót z detalu).
   const [listKey, setListKey] = useState(0)
@@ -131,6 +131,7 @@ function App() {
   // Refy przycisków dolnego menu - służą do przywrócenia focusu po zamknięciu sheeta.
   const addButtonRef = useRef(null)
   const moreButtonRef = useRef(null)
+  const collectionButtonRef = useRef(null)
 
   /*
    * Ten filtr jest głównym kontrolerem zapytań i paginacji.
@@ -289,9 +290,19 @@ function App() {
     setIsDetailView(false)
     // Formularz to osobny widok - przy wejściu zamykamy mobilne sheety,
     // żeby w danej chwili otwarty był tylko jeden element.
-    setIsAddSheetOpen(false)
+    setIsCollectionSheetOpen(false)
     setIsMoreSheetOpen(false)
     setIsMobileFiltersOpen(false)
+  }
+
+  // "Zamiast tego dodaj monetę/banknot": przełącza typ formularza szybkiego
+  // dodawania bez powrotu do listy (zostajemy w trybie dodawania).
+  const switchAddType = (nextType) => {
+    if (nextType === view) return
+    setView(nextType)
+    window.localStorage.setItem(VIEW_STORAGE_KEY, nextType)
+    setAddMode('szybki')
+    setMode('dodaj')
   }
 
   const backToListAfterSave = () => {
@@ -306,17 +317,9 @@ function App() {
 
   // "Filtry": otwiera istniejący panel filtrów i sortowania (FilterModal).
   const openMobileFilters = () => {
-    setIsAddSheetOpen(false)
+    setIsCollectionSheetOpen(false)
     setIsMoreSheetOpen(false)
     setIsMobileFiltersOpen(true)
-  }
-
-  // "Dodaj": z dolnego menu otwiera SZYBKI formularz (QuickAddForm) dla
-  // wybranego typu. Pełny ItemForm otwiera się dopiero po kliknięciu
-  // przycisku "Pełny formularz" (na desktopie lub wewnątrz szybkiego formularza).
-  const startQuickAdd = (type) => {
-    if (type !== view) switchType(type)
-    goToAdd('szybki')
   }
 
   // "Pełny formularz": przełącza szybki formularz na pełny ItemForm
@@ -398,6 +401,7 @@ function App() {
                   >
                     <ItemFilters
                       fixedType={view}
+                      hideHeader
                       onResults={handleResults}
                       onPaginationChange={handlePaginationChange}
                       onFilterStateChange={handleFilterStateChange}
@@ -508,10 +512,12 @@ function App() {
           ) : addMode === 'szybki' ? (
             <Suspense fallback={<LoadingFallback label="Wczytywanie formularza…" />}>
               <QuickAddForm
+                key={view}
                 fixedType={view}
                 onSaved={backToListAfterSave}
                 onCancel={backToListAfterSave}
                 onOpenFullForm={openFullForm}
+                onSwitchType={switchAddType}
               />
             </Suspense>
           ) : (
@@ -531,22 +537,23 @@ function App() {
           <MobileBottomNav
             activeTab={activeMobileTab}
             view={view}
-            typeCounts={typeCounts}
-            onSwitchType={switchType}
+            onOpenCollection={() => setIsCollectionSheetOpen(true)}
             onOpenFilters={openMobileFilters}
-            onOpenAdd={() => setIsAddSheetOpen(true)}
+            onAdd={() => goToAdd('szybki')}
             onOpenMore={() => setIsMoreSheetOpen(true)}
             addButtonRef={addButtonRef}
             moreButtonRef={moreButtonRef}
+            collectionButtonRef={collectionButtonRef}
           />
         )}
 
-        <AddItemSheet
-          isOpen={isAddSheetOpen}
-          onClose={() => setIsAddSheetOpen(false)}
-          onAddCoin={() => startQuickAdd('moneta')}
-          onAddBanknote={() => startQuickAdd('banknot')}
-          triggerRef={addButtonRef}
+        <CollectionSwitcherSheet
+          isOpen={isCollectionSheetOpen}
+          onClose={() => setIsCollectionSheetOpen(false)}
+          view={view}
+          typeCounts={typeCounts}
+          onSelectType={switchType}
+          triggerRef={collectionButtonRef}
         />
 
         <MoreSheet

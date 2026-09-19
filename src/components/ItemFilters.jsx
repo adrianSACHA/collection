@@ -30,6 +30,8 @@ const ItemFilters = forwardRef(function ItemFilters(
     // Tryb osadzony (np. akordeon w sidebarze): bez własnej karty/nagłówka
     // i bez duplikatu przycisku "Wyczyść" - czyszczenie robi nagłówek akordeonu.
     embedded = false,
+    // Ukrycie TYLKO wewnętrznego nagłówka (np. w modalu, który ma własny tytuł).
+    hideHeader = false,
   },
   ref
 ) {
@@ -324,14 +326,12 @@ const ItemFilters = forwardRef(function ItemFilters(
   return (
     <div
       className={
-        embedded
+        embedded || isModal
           ? 'w-full'
-          : `w-full rounded-lg border border-gray-200 bg-white p-4 ${
-              isModal ? 'border-0 shadow-none' : 'lg:p-6'
-            }`
+          : 'w-full rounded-lg border border-gray-200 bg-white p-4 lg:p-6'
       }
     >
-      {!embedded && (
+      {!embedded && !hideHeader && (
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-800">
             {isModal ? 'Filtry i sortowanie' : 'Filtry'}

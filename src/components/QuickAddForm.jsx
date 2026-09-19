@@ -7,7 +7,13 @@ import { uploadCoinPhotos } from '../lib/uploadPhoto'
 import { insertItem } from '../lib/itemsApi'
 import { useToast } from './toast/toastContext'
 
-export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullForm }) {
+export default function QuickAddForm({
+  onSaved,
+  onCancel,
+  fixedType,
+  onOpenFullForm,
+  onSwitchType,
+}) {
   const [typ, setTyp] = useState(fixedType || 'moneta')
   const [kraj, setKraj] = useState('')
   const [nominal, setNominal] = useState('')
@@ -167,7 +173,7 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
           </h2>
 
           {/* Pełny ItemForm otwiera się DOPIERO tutaj (albo z desktopowego
-              przycisku) - nigdy bezpośrednio z AddItemSheet. */}
+              przycisku w sidebarze). */}
           {onOpenFullForm && (
             <button
               type="button"
@@ -499,6 +505,22 @@ export default function QuickAddForm({ onSaved, onCancel, fixedType, onOpenFullF
               </button>
             )}
           </div>
+
+          {/* Alternatywny typ: pozwala dodać drugi typ przedmiotu bez powrotu
+              do listy - wystarczy przełączyć typ formularza. */}
+          {fixedType && onSwitchType && (
+            <button
+              type="button"
+              onClick={() =>
+                onSwitchType(fixedType === 'banknot' ? 'moneta' : 'banknot')
+              }
+              className="self-center rounded text-sm font-medium text-blue-600 underline transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            >
+              {fixedType === 'banknot'
+                ? 'Zamiast tego dodaj monetę'
+                : 'Zamiast tego dodaj banknot'}
+            </button>
+          )}
         </div>
       </div>
     </form>
