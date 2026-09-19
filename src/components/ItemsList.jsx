@@ -494,12 +494,26 @@ export default function ItemsList({
 
                           {/* Bez znaku wodnego komponent zwraca null, więc nie
                               zostaje puste miejsce (gap działa tylko między dziećmi). */}
-                          {!isCoin && (
-                            <WatermarkThumbnail
-                              src={thumbnails[item.id]?.znak_wodny}
-                              name={item.znak_wodny}
-                              className="h-8 w-8 lg:h-10 lg:w-10"
-                            />
+                          {!isCoin && thumbnails[item.id]?.znak_wodny && (
+                            <div className="group/znak relative flex-shrink-0">
+                              <WatermarkThumbnail
+                                src={thumbnails[item.id].znak_wodny}
+                                name={item.znak_wodny}
+                                className="h-8 w-8 lg:h-10 lg:w-10"
+                              />
+
+                              {/* Nazwa znaku wodnego pokazywana dopiero po
+                                  najechaniu na miniaturę (tylko desktop -
+                                  na dotyku nie ma stanu hover). */}
+                              {watermarkName && (
+                                <span
+                                  role="tooltip"
+                                  className="pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white shadow-lg lg:group-hover/znak:block"
+                                >
+                                  Znak wodny: {watermarkName}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
 
@@ -590,18 +604,6 @@ export default function ItemsList({
                                     {banknoteSeries}
                                   </span>
                                 </>
-                              )}
-
-                              {/* Nazwa znaku wodnego tuż przy serii (wyżej niż
-                                  linia lokalizacji), mniejszą czcionką i w
-                                  odróżniającym kolorze - nie konkuruje z nominałem. */}
-                              {watermarkName && (
-                                <span
-                                  title={`Znak wodny: ${watermarkName}`}
-                                  className="text-xs font-medium text-sky-600"
-                                >
-                                  Znak wodny: {watermarkName}
-                                </span>
                               )}
 
                               {listBadges.map((badge) => (
