@@ -4,6 +4,7 @@ import { deleteItem } from '../lib/itemsApi'
 import { supabase } from '../lib/supabase'
 import LoadingFallback from './LoadingFallback'
 import ItemDetail from './items-list/ItemDetail'
+import WatermarkThumbnail from './items-list/WatermarkThumbnail'
 import { exportItemsToCsv } from './items-list/exportCsv'
 import { useToast } from './toast/toastContext'
 
@@ -80,6 +81,24 @@ function formatLocation(item) {
   return parts.join(' · ')
 }
 
+// Tekstowa nazwa znaku wodnego (opis z pola `znak_wodny`) - tylko banknoty.
+function formatWatermarkName(item) {
+  return cleanValue(item.znak_wodny)
+}
+
+// Linia lokalizacji wzbogacona o nazwę znaku wodnego, czytelnie oddzieloną,
+// np. "Berlin · Reichsbanknote · Znak wodny: metalowy pasek".
+// Etykietę "Znak wodny:" pokazujemy wyłącznie, gdy nazwa istnieje.
+function formatLocationLine(location, watermarkName) {
+  const parts = [location]
+
+  if (watermarkName) {
+    parts.push(`Znak wodny: ${watermarkName}`)
+  }
+
+  return parts.filter(Boolean).join(' · ')
+}
+
 export default function ItemsList({
   filteredItems,
   onModeChange,
@@ -119,7 +138,7 @@ export default function ItemsList({
       const { data, error } = await supabase
         .from('item_photos')
         .select('item_id, typ, url')
-        .in('typ', ['awers', 'rewers'])
+        .in('typ', ['awers', 'rewers', 'znak_wodny'])
         .in('item_id', ids)
 
       if (error) {
@@ -312,6 +331,13 @@ export default function ItemsList({
                     : formatBanknoteSeries(item)
                   const listBadges = getListBadges(item)
                   const location = formatLocation(item)
+                  const watermarkName = isCoin
+                    ? ''
+                    : formatWatermarkName(item)
+                  const locationLine = formatLocationLine(
+                    location,
+                    watermarkName
+                  )
 
                   return (
                     <button
@@ -367,6 +393,18 @@ export default function ItemsList({
                             Do kupienia
                           </span>
                         )}
+
+                        {/* Znak wodny w prawym dolnym rogu zdjęcia banknotu.
+                            Kontener ma `relative` + `overflow-hidden`, więc
+                            miniatura nie wyjdzie poza obszar zdjęcia. */}
+                        {!isCoin && (
+                          <WatermarkThumbnail
+                            src={thumbnails[item.id]?.znak_wodny}
+                            name={item.znak_wodny}
+                            overlay
+                            className="absolute bottom-2 right-2 z-10 h-10 w-10 lg:h-12 lg:w-12"
+                          />
+                        )}
                       </div>
 
                       <div className="flex min-w-0 flex-col gap-1.5 p-2.5">
@@ -390,9 +428,9 @@ export default function ItemsList({
                           </p>
                         )}
 
-                        {location && (
+                        {locationLine && (
                           <p className="truncate text-xs text-gray-500">
-                            {location}
+                            {locationLine}
                           </p>
                         )}
 
@@ -421,6 +459,13 @@ export default function ItemsList({
                     : formatBanknoteSeries(item)
                   const listBadges = getListBadges(item)
                   const location = formatLocation(item)
+                  const watermarkName = isCoin
+                    ? ''
+                    : formatWatermarkName(item)
+                  const locationLine = formatLocationLine(
+                    location,
+                    watermarkName
+                  )
 
                   return (
                     <button
@@ -430,18 +475,33 @@ export default function ItemsList({
                       className="w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 lg:flex lg:min-h-[108px] lg:items-center lg:px-6 lg:py-4"
                     >
                       <div className="flex items-center gap-3 lg:flex-1">
-                        {thumbnails[item.id]?.awers ? (
-                          <img
-                            src={thumbnails[item.id].awers}
-                            alt=""
-                            loading="lazy"
-                            className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain lg:h-16 lg:w-16"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-xl text-gray-300 lg:h-16 lg:w-16 lg:text-2xl">
-                            {isCoin ? '🪙' : '💵'}
-                          </div>
-                        )}
+                        {/* Zdjęcie banknotu + znak wodny w jednym kontenerze.
+                            Mobile: znak wodny pod zdjęciem (kolumna).
+                            Desktop: znak wodny po prawej stronie zdjęcia (wiersz). */}
+                        <div className="flex flex-shrink-0 flex-col items-center gap-1.5 lg:flex-row lg:items-center lg:gap-2">
+                          {thumbnails[item.id]?.awers ? (
+                            <img
+                              src={thumbnails[item.id].awers}
+                              alt=""
+                              loading="lazy"
+                              className="h-12 w-12 flex-shrink-0 rounded-lg border border-gray-200 object-contain lg:h-16 lg:w-16"
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-xl text-gray-300 lg:h-16 lg:w-16 lg:text-2xl">
+                              {isCoin ? '🪙' : '💵'}
+                            </div>
+                          )}
+
+                          {/* Bez znaku wodnego komponent zwraca null, więc nie
+                              zostaje puste miejsce (gap działa tylko między dziećmi). */}
+                          {!isCoin && (
+                            <WatermarkThumbnail
+                              src={thumbnails[item.id]?.znak_wodny}
+                              name={item.znak_wodny}
+                              className="h-8 w-8 lg:h-10 lg:w-10"
+                            />
+                          )}
+                        </div>
 
                         <div className="min-w-0 flex-1">
                           {/* Mobile: osobne, krótkie wiersze bez kropek. */}
@@ -477,9 +537,9 @@ export default function ItemsList({
                               </p>
                             )}
 
-                            {location && (
+                            {locationLine && (
                               <p className="truncate text-sm text-gray-500">
-                                {location}
+                                {locationLine}
                               </p>
                             )}
 
@@ -530,6 +590,18 @@ export default function ItemsList({
                                     {banknoteSeries}
                                   </span>
                                 </>
+                              )}
+
+                              {/* Nazwa znaku wodnego tuż przy serii (wyżej niż
+                                  linia lokalizacji), mniejszą czcionką i w
+                                  odróżniającym kolorze - nie konkuruje z nominałem. */}
+                              {watermarkName && (
+                                <span
+                                  title={`Znak wodny: ${watermarkName}`}
+                                  className="text-xs font-medium text-sky-600"
+                                >
+                                  Znak wodny: {watermarkName}
+                                </span>
                               )}
 
                               {listBadges.map((badge) => (

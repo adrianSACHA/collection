@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import DetailRow from './DetailRow'
 import Lightbox from './Lightbox'
+import WatermarkThumbnail from './WatermarkThumbnail'
 
 export default function ItemDetail({
   item,
@@ -107,12 +108,13 @@ export default function ItemDetail({
             onClick={() =>
               setLightbox({ url: safePhotos.znak_wodny, label: 'Znak wodny' })
             }
-            className="flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+            className="flex-shrink-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
           >
-            <img
+            <WatermarkThumbnail
               src={safePhotos.znak_wodny}
-              alt="Znak wodny"
-              className="h-24 w-24 cursor-zoom-in object-contain"
+              name={item.znak_wodny}
+              className="h-24 w-24"
+              imgClassName="cursor-zoom-in"
             />
             <p className="py-1 text-center text-xs text-gray-500">Znak wodny</p>
           </button>
