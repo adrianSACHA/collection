@@ -118,7 +118,6 @@ export default function ItemsList({
 
   const toast = useToast()
   const items = useMemo(() => filteredItems || [], [filteredItems])
-  const totalCount = items.length
 
   const itemsKey = useMemo(
     () => items.map((item) => item.id).join(','),
@@ -300,14 +299,6 @@ export default function ItemsList({
   return (
     <div className="w-full">
       <div className="mx-auto max-w-md space-y-3 lg:max-w-6xl">
-        {filteredItems !== null && items.length > 0 && (
-          <div className="flex items-center justify-end">
-            <span className="text-sm text-gray-500">
-              {pagination?.total ?? totalCount} pozycji
-            </span>
-          </div>
-        )}
-
         {filteredItems === null ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
             <p className="text-gray-500">

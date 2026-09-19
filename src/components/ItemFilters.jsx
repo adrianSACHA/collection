@@ -27,6 +27,9 @@ const ItemFilters = forwardRef(function ItemFilters(
     onFilterStateChange,
     fixedType,
     onClose,
+    // Tryb osadzony (np. akordeon w sidebarze): bez własnej karty/nagłówka
+    // i bez duplikatu przycisku "Wyczyść" - czyszczenie robi nagłówek akordeonu.
+    embedded = false,
   },
   ref
 ) {
@@ -207,13 +210,39 @@ const ItemFilters = forwardRef(function ItemFilters(
     handleFilter({ page: 0, append: false })
   }, [handleFilter])
 
+  // Czyszczenie filtrów do akcji "Wyczyść filtry" z nagłówka akordeonu.
+  const handleClear = useCallback(() => {
+    const clearedFilters = getDefaultFilters(fixedType)
+
+    setSearch('')
+    setNominal('')
+    setKraj('')
+    setDataOd('')
+    setDataDo('')
+    setTyp(clearedFilters.typ)
+    setZnakWodny('')
+    setMennica('')
+    setMaterial('')
+    setSortBy(DEFAULT_SORT)
+    setQueryError(null)
+
+    filtersStateRef.current = clearedFilters
+
+    handleFilter({
+      page: 0,
+      append: false,
+      filtersOverride: clearedFilters,
+    })
+  }, [fixedType, handleFilter])
+
   useImperativeHandle(
     ref,
     () => ({
       loadMore,
       refresh,
+      clear: handleClear,
     }),
-    [loadMore, refresh]
+    [loadMore, refresh, handleClear]
   )
 
   const handleSortChange = (event) => {
@@ -246,30 +275,6 @@ const ItemFilters = forwardRef(function ItemFilters(
     if (isModal) {
       onClose()
     }
-  }
-
-  const handleClear = () => {
-    const clearedFilters = getDefaultFilters(fixedType)
-
-    setSearch('')
-    setNominal('')
-    setKraj('')
-    setDataOd('')
-    setDataDo('')
-    setTyp(clearedFilters.typ)
-    setZnakWodny('')
-    setMennica('')
-    setMaterial('')
-    setSortBy(DEFAULT_SORT)
-    setQueryError(null)
-
-    filtersStateRef.current = clearedFilters
-
-    handleFilter({
-      page: 0,
-      append: false,
-      filtersOverride: clearedFilters,
-    })
   }
 
   // Chipsy aktywnych filtrów (bez sortowania i typu narzuconego zakładką).
@@ -318,26 +323,32 @@ const ItemFilters = forwardRef(function ItemFilters(
 
   return (
     <div
-      className={`w-full rounded-lg border border-gray-200 bg-white p-4 ${
-        isModal ? 'border-0 shadow-none' : 'lg:p-6'
-      }`}
+      className={
+        embedded
+          ? 'w-full'
+          : `w-full rounded-lg border border-gray-200 bg-white p-4 ${
+              isModal ? 'border-0 shadow-none' : 'lg:p-6'
+            }`
+      }
     >
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">
-          {isModal ? 'Filtry i sortowanie' : 'Filtry'}
-        </h3>
+      {!embedded && (
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800">
+            {isModal ? 'Filtry i sortowanie' : 'Filtry'}
+          </h3>
 
-        {isModal && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Zamknij filtry"
-          >
-            ✕
-          </button>
-        )}
-      </div>
+          {isModal && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Zamknij filtry"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -345,7 +356,12 @@ const ItemFilters = forwardRef(function ItemFilters(
         </div>
       )}
 
-      <FilterChips chips={activeChips} onClearAll={handleClear} />
+      {/* W trybie osadzonym czyści nagłówek akordeonu ("Wyczyść filtry"),
+          więc chipsy nie powtarzają akcji "Wyczyść wszystko". */}
+      <FilterChips
+        chips={activeChips}
+        onClearAll={embedded ? undefined : handleClear}
+      />
 
       <div className="space-y-4">
         <div>
@@ -586,14 +602,16 @@ const ItemFilters = forwardRef(function ItemFilters(
           {loading ? 'Filtrowanie...' : 'Zastosuj'}
         </button>
 
-        <button
-          type="button"
-          onClick={handleClear}
-          disabled={loading}
-          className="flex-1 rounded-lg bg-gray-200 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-300"
-        >
-          Wyczyść
-        </button>
+        {!embedded && (
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={loading}
+            className="flex-1 rounded-lg bg-gray-200 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-300"
+          >
+            Wyczyść
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1,10 +1,19 @@
-import { lazy, Suspense, useCallback, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import ItemFilters from './components/ItemFilters'
 import FilterModal from './components/FilterModal'
 import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
 import LoadingFallback from './components/LoadingFallback'
 import MobileBottomNav from './components/navigation/MobileBottomNav'
+import DesktopSidebar from './components/navigation/DesktopSidebar'
 import AddItemSheet from './components/navigation/AddItemSheet'
 import MoreSheet from './components/navigation/MoreSheet'
 import { exportItemsToCsv } from './components/items-list/exportCsv'
@@ -106,6 +115,13 @@ function App() {
     hasMore: false,
   })
 
+  // Liczniki pozycji per typ (do nawigacji w sidebarze). `null` => nieznane,
+  // wtedy nie pokazujemy badge'a (żadnych pustych miejsc na liczniki).
+  const [typeCounts, setTypeCounts] = useState({
+    banknot: null,
+    moneta: null,
+  })
+
   // Mobilne bottom sheety (Dodaj / Więcej) - jedyne miejsce trzymające ich stan.
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
   const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false)
@@ -123,11 +139,67 @@ function App() {
    */
   const desktopFiltersRef = useRef(null)
 
+  // Liczniki pozycji per typ - osobne, lekkie zapytania `head: true` (bez wierszy).
+  // Czysta funkcja (bez setState). Błąd nie jest pokazywany w UI; wtedy licznik
+  // zostaje `null` i badge znika (żadnych pustych miejsc).
+  const fetchTypeCounts = useCallback(async () => {
+    const [banknotRes, monetaRes] = await Promise.all([
+      supabase
+        .from('items')
+        .select('*', { count: 'exact', head: true })
+        .eq('typ', 'banknot'),
+      supabase
+        .from('items')
+        .select('*', { count: 'exact', head: true })
+        .eq('typ', 'moneta'),
+    ])
+
+    return {
+      banknot:
+        typeof banknotRes.count === 'number' ? banknotRes.count : null,
+      moneta: typeof monetaRes.count === 'number' ? monetaRes.count : null,
+    }
+  }, [])
+
+  useEffect(() => {
+    // setState dopiero po `await`, w funkcji zdefiniowanej w efekcie -
+    // ten sam wzorzec co wczytywanie miniatur w ItemsList.
+    async function loadTypeCounts() {
+      const counts = await fetchTypeCounts()
+      setTypeCounts(counts)
+    }
+
+    loadTypeCounts()
+  }, [fetchTypeCounts])
+
   // Wymusza ponowne wczytanie listy z bieżącymi filtrami. Lista nie używa
   // react-query (ItemFilters pobiera ją ręcznie), dlatego invalidacja
   // ['items'] nic nie robi - trzeba jawnie odświeżyć wyniki.
   const refreshList = useCallback(() => {
     desktopFiltersRef.current?.refresh()
+    fetchTypeCounts().then((counts) => setTypeCounts(counts))
+  }, [fetchTypeCounts])
+
+  // Liczba aktywnych filtrów (bez sortowania i typu narzuconego zakładką) -
+  // spójna z chipsami w ItemFilters. Wykorzystana w badge'u akordeonu.
+  const activeFilterCount = useMemo(() => {
+    const filters = currentFilters
+    if (!filters) return 0
+
+    return [
+      filters.search,
+      filters.nominal,
+      filters.kraj,
+      filters.dataOd,
+      filters.dataDo,
+      filters.znakWodny,
+      filters.mennica,
+      filters.material,
+    ].filter((value) => value && String(value).trim() !== '').length
+  }, [currentFilters])
+
+  const handleClearFilters = useCallback(() => {
+    desktopFiltersRef.current?.clear()
   }, [])
 
   const handleResults = useCallback(
@@ -199,6 +271,9 @@ function App() {
     setFilterResults(null)
     setIsDetailView(false)
     setIsMobileFiltersOpen(false)
+    // Remount listy - czyści wewnętrzny wybór pozycji (np. gdy przełączamy
+    // moduł będąc w widoku szczegółów).
+    setListKey((key) => key + 1)
 
     setPagination({
       total: 0,
@@ -228,19 +303,6 @@ function App() {
   }
 
   // --- Nawigacja mobilna (dolne menu) ---
-
-  // "Kolekcja": powrót do istniejącego głównego widoku listy.
-  const openCollection = () => {
-    setIsAddSheetOpen(false)
-    setIsMoreSheetOpen(false)
-    setIsMobileFiltersOpen(false)
-    if (isDetailView) {
-      // Remount ItemsList, aby wyczyścić jego wewnętrzny wybór (widok szczegółów).
-      setListKey((key) => key + 1)
-    }
-    setMode('lista')
-    setIsDetailView(false)
-  }
 
   // "Filtry": otwiera istniejący panel filtrów i sortowania (FilterModal).
   const openMobileFilters = () => {
@@ -294,136 +356,33 @@ function App() {
   return (
     <AuthGate>
       <div className="min-h-screen flex flex-col lg:flex-row lg:bg-gray-50">
-        {/* Górna nawigacja mobilna */}
-        <div className="sticky top-0 z-10 flex border-b bg-white shadow-sm lg:hidden">
-          <button
-            type="button"
-            onClick={() => switchType('moneta')}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              view === 'moneta'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Monety
-          </button>
-
-          <button
-            type="button"
-            onClick={() => switchType('banknot')}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              view === 'banknot'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Banknoty
-          </button>
-        </div>
-
-        {/* Sidebar. Ukrycie Tailwindem nie odmontowuje ItemFilters.
-            Zwijanie (desktop) też nie odmontowuje - <aside> zostaje w DOM,
-            zwężamy go i chowamy zawartość, więc filtry/paginacja dalej działają. */}
-        <aside
-          className={`hidden lg:flex lg:flex-col lg:border-r lg:bg-white lg:shadow-sm lg:transition-[width] lg:duration-200 ${
-            isSidebarCollapsed ? 'lg:w-0 lg:overflow-hidden lg:border-r-0' : 'lg:w-80'
-          }`}
-        >
-          <div className="flex items-center justify-between px-4 pt-4">
-            <span className="text-sm font-semibold text-gray-500">Menu</span>
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-label={isSidebarCollapsed ? 'Rozwiń panel' : 'Zwiń panel'}
-              title={isSidebarCollapsed ? 'Rozwiń panel' : 'Zwiń panel'}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
-            >
-              ◀
-            </button>
-          </div>
-
-          <nav className="space-y-1 p-4 pt-2">
-            <button
-              type="button"
-              onClick={() => switchType('moneta')}
-              className={`w-full rounded-lg px-4 py-3 text-left font-medium transition-colors ${
-                view === 'moneta'
-                  ? 'border-l-4 border-blue-600 bg-blue-50 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Monety
-            </button>
-
-            <button
-              type="button"
-              onClick={() => switchType('banknot')}
-              className={`w-full rounded-lg px-4 py-3 text-left font-medium transition-colors ${
-                view === 'banknot'
-                  ? 'border-l-4 border-blue-600 bg-blue-50 text-blue-600'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Banknoty
-            </button>
-          </nav>
-
-          {/* Filtry trzymamy ZAWSZE zamontowane (chowamy CSS-em), żeby ich stan
-              nie znikał przy wejściu/wyjściu z detalu. */}
-          <div
-            className={`flex-1 overflow-y-auto px-4 pb-4 ${
-              showFilters ? '' : 'hidden'
-            }`}
-          >
-            <ItemFilters
-              ref={desktopFiltersRef}
-              fixedType={view}
-              onResults={handleResults}
-              onPaginationChange={handlePaginationChange}
-              onFilterStateChange={handleFilterStateChange}
-            />
-          </div>
-
-          {showFilters && canExport && (
-            <div className="space-y-1 px-4 pb-2">
-              <button
-                type="button"
-                onClick={handleExportAll}
-                disabled={isExporting || !currentFilters}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-              >
-                {isExporting
-                  ? 'Eksportowanie…'
-                  : `⬇ Eksport CSV (wszystkie ${pagination.total})`}
-              </button>
-
-              {exportError && (
-                <p className="text-xs text-red-600">{exportError}</p>
-              )}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => supabase.auth.signOut()}
-            className="mx-4 mb-4 mt-auto rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50"
-          >
-            Wyloguj
-          </button>
-        </aside>
-
-        {/* Uchwyt do rozwijania zwiniętego sidebara (tylko desktop) */}
-        {isSidebarCollapsed && (
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="Rozwiń panel"
-            title="Rozwiń panel"
-            className="fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-lg border border-l-0 border-gray-300 bg-white px-1.5 py-6 text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-700 lg:block"
-          >
-            ▶
-          </button>
-        )}
+        {/* Sidebar (desktop). Komponent trzyma układ, ikony i akcje; stan
+            (widok, zwinięcie, liczniki, filtry) pozostaje w App. ItemFilters
+            jest w nim ZAWSZE zamontowany (chowany CSS-em), więc zwijanie
+            panelu/akordeonu nie gubi wpisanych wartości ani ref-a paginacji. */}
+        <DesktopSidebar
+          collapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+          view={view}
+          onSwitchType={switchType}
+          typeCounts={typeCounts}
+          showFilters={showFilters}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
+          canExport={canExport}
+          onExport={handleExportAll}
+          isExporting={isExporting}
+          exportError={exportError}
+          totalCount={pagination.total}
+          onQuickAdd={() => goToAdd('szybki')}
+          onFullForm={openFullForm}
+          typLabel={typLabel}
+          onLogout={() => supabase.auth.signOut()}
+          filtersRef={desktopFiltersRef}
+          onResults={handleResults}
+          onPaginationChange={handlePaginationChange}
+          onFilterStateChange={handleFilterStateChange}
+        />
 
         <main className="flex-1 pb-24 lg:overflow-auto lg:pb-0">
           {mode === 'lista' ? (
@@ -448,35 +407,21 @@ function App() {
                 </div>
               )}
 
-              {/* Szybkie/pełne dodawanie widoczne tylko na desktopie (<lg ukryte;
-                  na mobile ich rolę przejmuje przycisk "Dodaj" w dolnym menu). */}
-              {showFilters && (
-                <div className="mx-auto hidden max-w-md lg:block lg:max-w-6xl">
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={() => goToAdd('szybki')}
-                      className="flex-1 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-100"
-                    >
-                      📷 Szybko dodaj {typLabel}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => goToAdd('pelny')}
-                      className="flex-1 rounded-lg border border-gray-300 bg-white py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                    >
-                      + Pełny formularz
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {showFilters && (
                 <div className="mx-auto flex max-w-md items-center justify-between gap-3 lg:max-w-6xl">
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    {view === 'moneta' ? 'Monety' : 'Banknoty'}
-                  </h2>
+                  {/* Liczba pozycji trzyma się tytułu (nie jest samotnym tekstem
+                      w pustej przestrzeni). Główne akcje dodawania są w sidebarze. */}
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      {view === 'moneta' ? 'Monety' : 'Banknoty'}
+                    </h2>
+
+                    {pagination.total > 0 && (
+                      <span className="truncate text-sm text-gray-500">
+                        {pagination.total} pozycji
+                      </span>
+                    )}
+                  </div>
 
                   {/* Mobile: dwie małe ikony (stan viewMode bez zmian) */}
                   <div
@@ -585,7 +530,9 @@ function App() {
         {mode !== 'dodaj' && (
           <MobileBottomNav
             activeTab={activeMobileTab}
-            onOpenCollection={openCollection}
+            view={view}
+            typeCounts={typeCounts}
+            onSwitchType={switchType}
             onOpenFilters={openMobileFilters}
             onOpenAdd={() => setIsAddSheetOpen(true)}
             onOpenMore={() => setIsMoreSheetOpen(true)}
