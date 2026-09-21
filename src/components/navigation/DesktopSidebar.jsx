@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import ItemFilters from '../ItemFilters'
+import FiltersPanel from '../collection/FiltersPanel'
 
 // Desktopowy panel boczny: nawigacja kolekcji (Banknoty / Monety) + rozwijane
-// filtry + główne akcje. Cały stan aplikacji (widok, zwinięcie, liczniki,
-// filtry) pozostaje w App.jsx i jest przekazany przez propsy.
+// filtry + główne akcje. Stan widoku/zwinięcia/liczników pochodzi z propsów,
+// a stan filtrów - z CollectionContext (patrz useCollection).
 //
-// Ważne: ItemFilters renderujemy ZAWSZE (tylko chowamy CSS-em), żeby nie
-// tracić wpisanych wartości filtrów ani ref-a do paginacji przy zwijaniu
-// panelu / akordeonu filtrów.
+// Panel filtrów (FiltersPanel) renderujemy zawsze (chowany CSS-em), ale jego
+// stan i tak mieszka w kontekście - dzięki temu stan filtrów jest jeden,
+// niezależnie od tego, czy panel jest widoczny.
 
 /* --- Ikony (inline, bez zewnętrznej biblioteki) --- */
 
@@ -232,11 +232,6 @@ export default function DesktopSidebar({
   onFullForm,
   typLabel,
   onLogout,
-  filtersRef,
-  onResults,
-  onLoading,
-  onPaginationChange,
-  onFilterStateChange,
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -266,7 +261,7 @@ export default function DesktopSidebar({
             onClick={onToggleCollapse}
             aria-label="Zwiń panel boczny"
             title="Zwiń panel boczny"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           >
             <CollapseIcon />
           </button>
@@ -274,7 +269,7 @@ export default function DesktopSidebar({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           <nav aria-label="Kolekcja">
-            <p className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            <p className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               Kolekcja
             </p>
 
@@ -354,15 +349,7 @@ export default function DesktopSidebar({
             id="sidebar-filters-panel"
             className={showFilters && filtersOpen ? 'mt-1' : 'hidden'}
           >
-            <ItemFilters
-              ref={filtersRef}
-              embedded
-              fixedType={view}
-              onResults={onResults}
-              onLoading={onLoading}
-              onPaginationChange={onPaginationChange}
-              onFilterStateChange={onFilterStateChange}
-            />
+            <FiltersPanel embedded />
           </div>
         </div>
 
@@ -407,7 +394,7 @@ export default function DesktopSidebar({
             onClick={onToggleCollapse}
             aria-label="Rozwiń panel boczny"
             title="Rozwiń panel boczny"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           >
             <ExpandIcon />
           </button>

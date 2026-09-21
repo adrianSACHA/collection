@@ -3,7 +3,7 @@ import BottomSheetHeader from './sheets/BottomSheetHeader'
 
 // Modal filtrów (mobile) zbudowany na wspólnym BottomSheet - ten sam handle,
 // narożniki, overlay i obsługa klawiatury/gestów co pozostałe sheety.
-// `children` to zawartość (np. <ItemFilters onClose={...} hideHeader />).
+// `children` to zawartość (np. <FiltersPanel onClose={...} hideHeader />).
 
 const TITLE_ID = 'filter-sheet-title'
 

@@ -3,11 +3,9 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
-import ItemFilters from './components/ItemFilters'
 import FilterModal from './components/FilterModal'
 import ItemsList from './components/ItemsList'
 import AuthGate from './components/AuthGate'
@@ -16,9 +14,12 @@ import MobileBottomNav from './components/navigation/MobileBottomNav'
 import DesktopSidebar from './components/navigation/DesktopSidebar'
 import CollectionSwitcherSheet from './components/navigation/CollectionSwitcherSheet'
 import MoreSheet from './components/navigation/MoreSheet'
+import FiltersPanel from './components/collection/FiltersPanel'
 import { exportItemsToCsv } from './components/items-list/exportCsv'
 import { fetchAllItemsForExport } from './lib/itemsApi'
 import { supabase } from './lib/supabase'
+import { useCollection } from './collection/useCollection'
+import { CollectionContext } from './collection/collectionContext'
 
 // Formularze ładowane leniwie - nie są potrzebne przy pierwszym renderze
 // listy, a ich kod jest spory (pola, zdjęcia, walidacja).
@@ -91,15 +92,20 @@ function GalleryIcon() {
   )
 }
 
-function App() {
+/*
+ * CollectionApp montuje się DOPIERO wewnątrz <AuthGate> (po zalogowaniu).
+ * Dzięki temu useCollection nie odpytuje bazy bez sesji, a po zalogowaniu
+ * zawsze startuje ze świeżym, poprawnym zapytaniem.
+ *
+ * Cały stan filtrów i paginacji żyje w useCollection; komponenty-dzieci
+ * (panel filtrów) czytają go przez CollectionContext.
+ */
+function CollectionApp() {
   const [view, setView] = useState(getInitialView)
   const [mode, setMode] = useState('lista')
   const [layout, setLayout] = useState(getInitialLayout) // 'lista' | 'galeria'
   // Tryb dodawania: 'szybki' (formularz ze zdjęciem) lub 'pelny' (wszystkie pola)
   const [addMode, setAddMode] = useState('szybki')
-  const [filterResults, setFilterResults] = useState(null)
-  // Bieżące filtry z ItemFilters - używane do eksportu CAŁEGO zbioru (nie tylko wczytanych stron).
-  const [currentFilters, setCurrentFilters] = useState(null)
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState(null)
   const [isDetailView, setIsDetailView] = useState(false)
@@ -108,13 +114,6 @@ function App() {
     getInitialSidebarCollapsed
   )
 
-  const [pagination, setPagination] = useState({
-    total: 0,
-    loaded: 0,
-    page: 0,
-    hasMore: false,
-  })
-
   // Liczniki pozycji per typ (do nawigacji w sidebarze). `null` => nieznane,
   // wtedy nie pokazujemy badge'a (żadnych pustych miejsc na liczniki).
   const [typeCounts, setTypeCounts] = useState({
@@ -122,27 +121,29 @@ function App() {
     moneta: null,
   })
 
-  // Mobilne bottom sheety (Kolekcja / Więcej) - jedyne miejsce trzymające ich stan.
+  // Mobilne bottom sheety (Kolekcja / Więcej).
   const [isCollectionSheetOpen, setIsCollectionSheetOpen] = useState(false)
   const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false)
-  // Zmiana klucza resetuje wewnętrzny stan ItemsList (np. powrót z detalu).
-  const [listKey, setListKey] = useState(0)
 
   // Refy przycisków dolnego menu - służą do przywrócenia focusu po zamknięciu sheeta.
   const addButtonRef = useRef(null)
   const moreButtonRef = useRef(null)
   const collectionButtonRef = useRef(null)
 
-  /*
-   * Ten filtr jest głównym kontrolerem zapytań i paginacji.
-   * <aside> bywa ukryty przez Tailwind, ale komponent nadal jest
-   * zamontowany, więc jego ref oraz loadMore() są zawsze dostępne.
-   */
-  const desktopFiltersRef = useRef(null)
+  // Jedno źródło prawdy: filtry + wyniki + paginacja.
+  const collection = useCollection({ fixedType: view })
+  const {
+    items,
+    pagination,
+    draft,
+    activeFilterCount,
+    clear: clearFilters,
+    refresh,
+    loadMore,
+    syncType,
+  } = collection
 
   // Liczniki pozycji per typ - osobne, lekkie zapytania `head: true` (bez wierszy).
-  // Czysta funkcja (bez setState). Błąd nie jest pokazywany w UI; wtedy licznik
-  // zostaje `null` i badge znika (żadnych pustych miejsc).
   const fetchTypeCounts = useCallback(async () => {
     const [banknotRes, monetaRes] = await Promise.all([
       supabase
@@ -163,8 +164,6 @@ function App() {
   }, [])
 
   useEffect(() => {
-    // setState dopiero po `await`, w funkcji zdefiniowanej w efekcie -
-    // ten sam wzorzec co wczytywanie miniatur w ItemsList.
     async function loadTypeCounts() {
       const counts = await fetchTypeCounts()
       setTypeCounts(counts)
@@ -173,83 +172,26 @@ function App() {
     loadTypeCounts()
   }, [fetchTypeCounts])
 
-  // Wymusza ponowne wczytanie listy z bieżącymi filtrami. Lista nie używa
-  // react-query (ItemFilters pobiera ją ręcznie), dlatego invalidacja
-  // ['items'] nic nie robi - trzeba jawnie odświeżyć wyniki.
+  // Wymusza ponowne wczytanie listy z bieżącymi filtrami po zapisie/usunięciu.
   const refreshList = useCallback(() => {
-    desktopFiltersRef.current?.refresh()
+    refresh()
     fetchTypeCounts().then((counts) => setTypeCounts(counts))
-  }, [fetchTypeCounts])
-
-  // Liczba aktywnych filtrów (bez sortowania i typu narzuconego zakładką) -
-  // spójna z chipsami w ItemFilters. Wykorzystana w badge'u akordeonu.
-  const activeFilterCount = useMemo(() => {
-    const filters = currentFilters
-    if (!filters) return 0
-
-    return [
-      filters.search,
-      filters.nominal,
-      filters.kraj,
-      filters.dataOd,
-      filters.dataDo,
-      filters.znakWodny,
-      filters.mennica,
-      filters.material,
-    ].filter((value) => value && String(value).trim() !== '').length
-  }, [currentFilters])
-
-  const handleClearFilters = useCallback(() => {
-    desktopFiltersRef.current?.clear()
-  }, [])
-
-  const handleResults = useCallback(
-    (newItems, { append = false } = {}) => {
-      if (newItems === null) {
-        setFilterResults(null)
-        return
-      }
-
-      setFilterResults((previousItems) => {
-        if (!append) {
-          return newItems
-        }
-
-        const uniqueItems = new Map()
-
-        for (const item of [...(previousItems || []), ...newItems]) {
-          uniqueItems.set(item.id, item)
-        }
-
-        return Array.from(uniqueItems.values())
-      })
-    },
-    []
-  )
-
-  const handlePaginationChange = useCallback((nextPagination) => {
-    setPagination(nextPagination)
-  }, [])
+  }, [refresh, fetchTypeCounts])
 
   const closeMobileFilters = useCallback(() => {
     setIsMobileFiltersOpen(false)
   }, [])
 
-  // ItemFilters zgłasza aktualny zestaw filtrów - potrzebny do eksportu całości.
-  const handleFilterStateChange = useCallback((nextFilters) => {
-    setCurrentFilters(nextFilters)
-  }, [])
-
   // Eksport CSV: pobiera CAŁY zbiór spełniający bieżące filtry (nie tylko
   // wczytane strony listy) i pobiera plik.
   const handleExportAll = useCallback(async () => {
-    if (!currentFilters || isExporting) return
+    if (!draft || isExporting) return
 
     try {
       setIsExporting(true)
       setExportError(null)
 
-      const allItems = await fetchAllItemsForExport(currentFilters)
+      const allItems = await fetchAllItemsForExport(draft)
 
       if (allItems.length === 0) {
         setExportError('Brak pozycji do eksportu dla bieżących filtrów.')
@@ -263,25 +205,17 @@ function App() {
     } finally {
       setIsExporting(false)
     }
-  }, [currentFilters, isExporting])
+  }, [draft, isExporting])
 
   const switchType = (nextType) => {
     setView(nextType)
     window.localStorage.setItem(VIEW_STORAGE_KEY, nextType)
     setMode('lista')
-    setFilterResults(null)
     setIsDetailView(false)
     setIsMobileFiltersOpen(false)
-    // Remount listy - czyści wewnętrzny wybór pozycji (np. gdy przełączamy
-    // moduł będąc w widoku szczegółów).
-    setListKey((key) => key + 1)
-
-    setPagination({
-      total: 0,
-      loaded: 0,
-      page: 0,
-      hasMore: false,
-    })
+    // Reset filtrów + przeładowanie listy dla nowego typu; listę dodatkowo
+    // resetujemy kluczem `key={view}` na ItemsList.
+    syncType(nextType)
   }
 
   const goToAdd = (nextAddMode = 'szybki') => {
@@ -303,27 +237,26 @@ function App() {
     window.localStorage.setItem(VIEW_STORAGE_KEY, nextType)
     setAddMode('szybki')
     setMode('dodaj')
+    // Utrzymaj filtry spójne z nowym typem (używane po powrocie do listy).
+    syncType(nextType)
   }
 
   const backToListAfterSave = () => {
     setMode('lista')
     setIsDetailView(false)
-    // Lista jest pobierana ręcznie przez ItemFilters (nie przez react-query),
-    // więc po zapisie wymuszamy ponowne wczytanie aktualnych filtrów.
     refreshList()
   }
 
   // --- Nawigacja mobilna (dolne menu) ---
 
-  // "Filtry": otwiera istniejący panel filtrów i sortowania (FilterModal).
+  // "Filtry": otwiera panel filtrów i sortowania (FilterModal).
   const openMobileFilters = () => {
     setIsCollectionSheetOpen(false)
     setIsMoreSheetOpen(false)
     setIsMobileFiltersOpen(true)
   }
 
-  // "Pełny formularz": przełącza szybki formularz na pełny ItemForm
-  // dla aktualnego typu (fixedType = view).
+  // "Pełny formularz": przełącza szybki formularz na pełny ItemForm.
   const openFullForm = () => {
     goToAdd('pelny')
   }
@@ -341,13 +274,9 @@ function App() {
     })
   }
 
- const loadMore = () => {
-  desktopFiltersRef.current?.loadMore()
-}
-
   const typLabel = view === 'moneta' ? 'monetę' : 'banknot'
   const showFilters = mode === 'lista' && !isDetailView
-  const canExport = Array.isArray(filterResults) && filterResults.length > 0
+  const canExport = Array.isArray(items) && items.length > 0
 
   // Aktywna pozycja dolnego menu mobilnego.
   const activeMobileTab = isMobileFiltersOpen
@@ -357,12 +286,12 @@ function App() {
       : null
 
   return (
-    <AuthGate>
+    <CollectionContext.Provider value={{ ...collection, fixedType: view }}>
       <div className="min-h-screen flex flex-col lg:flex-row lg:bg-gray-50">
         {/* Sidebar (desktop). Komponent trzyma układ, ikony i akcje; stan
-            (widok, zwinięcie, liczniki, filtry) pozostaje w App. ItemFilters
-            jest w nim ZAWSZE zamontowany (chowany CSS-em), więc zwijanie
-            panelu/akordeonu nie gubi wpisanych wartości ani ref-a paginacji. */}
+            (widok, zwinięcie, liczniki, filtry) pozostaje wyżej (App/useCollection).
+            Panel filtrów czyta stan z kontekstu, więc nie trzeba już przekazywać
+            ref-a ani callbacków. */}
         <DesktopSidebar
           collapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
@@ -371,7 +300,7 @@ function App() {
           typeCounts={typeCounts}
           showFilters={showFilters}
           activeFilterCount={activeFilterCount}
-          onClearFilters={handleClearFilters}
+          onClearFilters={clearFilters}
           canExport={canExport}
           onExport={handleExportAll}
           isExporting={isExporting}
@@ -381,30 +310,22 @@ function App() {
           onFullForm={openFullForm}
           typLabel={typLabel}
           onLogout={() => supabase.auth.signOut()}
-          filtersRef={desktopFiltersRef}
-          onResults={handleResults}
-          onPaginationChange={handlePaginationChange}
-          onFilterStateChange={handleFilterStateChange}
         />
 
         <main className="flex-1 pb-24 lg:overflow-auto lg:pb-0">
           {mode === 'lista' ? (
             <div className="space-y-4 p-4 lg:p-6">
-              {/* Panel filtrów/sortowania na mobile otwiera przycisk "Filtry"
-                  z dolnego menu. Stary przycisk nad listą usunięty, żeby lista
-                  zaczynała się wyżej. Modal zostaje zamontowany jak wcześniej. */}
+              {/* Panel filtrów/sortowania na mobile. Ten sam FiltersPanel co w
+                  sidebarze, ale sterowany wspólnym kontekstem - brak drugiego
+                  biegu zapytania i rozjazdu stanu. */}
               {showFilters && (
                 <div className="lg:hidden">
                   <FilterModal
                     isOpen={isMobileFiltersOpen}
                     onClose={closeMobileFilters}
                   >
-                    <ItemFilters
-                      fixedType={view}
+                    <FiltersPanel
                       hideHeader
-                      onResults={handleResults}
-                      onPaginationChange={handlePaginationChange}
-                      onFilterStateChange={handleFilterStateChange}
                       onClose={closeMobileFilters}
                     />
                   </FilterModal>
@@ -500,8 +421,8 @@ function App() {
               )}
 
               <ItemsList
-                key={listKey}
-                filteredItems={filterResults}
+                key={view}
+                filteredItems={items}
                 onModeChange={setIsDetailView}
                 onItemsChanged={refreshList}
                 pagination={pagination}
@@ -531,8 +452,7 @@ function App() {
           )}
         </main>
 
-        {/* Dolna nawigacja mobilna (< lg) + mobilne bottom sheety.
-            Widoczne tylko na mobile; na desktopie nic się nie zmienia. */}
+        {/* Dolna nawigacja mobilna (< lg) + mobilne bottom sheety. */}
         {mode !== 'dodaj' && (
           <MobileBottomNav
             activeTab={activeMobileTab}
@@ -566,6 +486,16 @@ function App() {
           triggerRef={moreButtonRef}
         />
       </div>
+    </CollectionContext.Provider>
+  )
+}
+
+function App() {
+  // Bramka auth na zewnątrz: CollectionApp (i jego zapytania) startuje dopiero
+  // po zalogowaniu, więc useCollection nigdy nie odpytuje bazy bez sesji.
+  return (
+    <AuthGate>
+      <CollectionApp />
     </AuthGate>
   )
 }
