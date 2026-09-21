@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import Cropper from 'react-easy-crop'
 import 'react-easy-crop/react-easy-crop.css'
 import { getCroppedImg } from '../../lib/cropImage'
@@ -22,6 +23,12 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState(null)
+
+  const dialogRef = useRef(null)
+
+  // Modal jest montowany tylko gdy otwarty - pułapka aktywna od razu, fokus
+  // ląduje na pierwszym elemencie (przycisk ✕), po zamknięciu wraca na trigger.
+  useFocusTrap(dialogRef, true)
 
   const onCropComplete = useCallback((_area, areaPixels) => {
     setCroppedAreaPixels(areaPixels)
@@ -61,10 +68,12 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Przytnij zdjęcie"
-      className="fixed inset-0 z-50 flex flex-col bg-black/90"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex flex-col bg-black/90 outline-none"
     >
       <div className="flex items-center justify-between p-4 text-white">
         <h3 className="text-base font-semibold">Przytnij zdjęcie</h3>
