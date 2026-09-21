@@ -11,7 +11,7 @@ function extensionForType(type) {
 
 // Wyciąga ścieżkę pliku w bucketcie "photos" z publicznego URL-a.
 // publicUrl: .../storage/v1/object/public/photos/<itemId>/<typ>.<ext>?v=...
-function getStoragePathFromUrl(url) {
+export function getStoragePathFromUrl(url) {
   if (!url) return null
 
   const marker = '/object/public/photos/'
@@ -161,28 +161,29 @@ export async function deletePhoto(itemId, typ) {
 }
 
 
+const PHOTO_TYPES = ['awers', 'rewers', 'znak_wodny']
+
 /**
- * Wgrywa oba zdjęcia (awers i rewers) na raz.
- * Zdjęcia są opcjonalne: gdy `photos` jest null albo dana strona nie została
- * wybrana, pomijamy jej upload zamiast rzucać błędem.
+ * Wgrywa podane zdjęcia jednej pozycji. Zdjęcia są opcjonalne: brakujące typy
+ * (null/undefined) są pomijane, a nie traktowane jako błąd.
  *
- * @param {{ awers?: { file: File } | null, rewers?: { file: File } | null } | null} photos
+ * Jedna wspólna ścieżka uploadu dla pełnego formularza (ItemForm) i szybkiego
+ * dodawania (QuickAddForm) - wcześniej istniały dwie osobne implementacje.
+ *
+ * @param {Partial<Record<'awers'|'rewers'|'znak_wodny', File | null>>} filesByType
  * @param {string} itemId
- * @returns {Promise<{ awers: object | null, rewers: object | null }>}
+ * @returns {Promise<Record<'awers'|'rewers'|'znak_wodny', object | null>>}
  */
-export async function uploadCoinPhotos(photos, itemId) {
-  if (!photos) {
-    return { awers: null, rewers: null }
-  }
+export async function uploadItemPhotos(filesByType, itemId) {
+  const results = await Promise.all(
+    PHOTO_TYPES.map((typ) => {
+      const file = filesByType?.[typ]
+      return file ? uploadPhoto(file, itemId, typ) : Promise.resolve(null)
+    })
+  )
 
-  const [awersResult, rewersResult] = await Promise.all([
-    photos.awers?.file
-      ? uploadPhoto(photos.awers.file, itemId, 'awers')
-      : Promise.resolve(null),
-    photos.rewers?.file
-      ? uploadPhoto(photos.rewers.file, itemId, 'rewers')
-      : Promise.resolve(null),
-  ])
-
-  return { awers: awersResult, rewers: rewersResult }
+  return PHOTO_TYPES.reduce((acc, typ, index) => {
+    acc[typ] = results[index]
+    return acc
+  }, {})
 }

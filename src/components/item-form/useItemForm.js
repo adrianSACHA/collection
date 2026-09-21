@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { uploadPhoto, deletePhoto } from '../../lib/uploadPhoto'
+import { deletePhoto, uploadItemPhotos } from '../../lib/uploadPhoto'
 import {
   createItem,
   getItem,
@@ -133,37 +133,19 @@ export function useItemForm({
 
   const uploadSelectedPhotos = useCallback(
     async (targetItemId) => {
-      const uploadTasks = []
-
-      if (awersFile) {
-        uploadTasks.push(
-          uploadPhoto(awersFile, targetItemId, 'awers')
-        )
+      const filesByType = {
+        awers: awersFile,
+        rewers: rewersFile,
+        znak_wodny: znakWodnyFile,
       }
 
-      if (rewersFile) {
-        uploadTasks.push(
-          uploadPhoto(rewersFile, targetItemId, 'rewers')
-        )
-      }
-
-      if (znakWodnyFile) {
-        uploadTasks.push(
-          uploadPhoto(
-            znakWodnyFile,
-            targetItemId,
-            'znak_wodny'
-          )
-        )
-      }
-
-      if (uploadTasks.length === 0) return
+      if (!Object.values(filesByType).some(Boolean)) return
 
       try {
         setPhotoUploading(true)
         setPhotoError(null)
 
-        await Promise.all(uploadTasks)
+        await uploadItemPhotos(filesByType, targetItemId)
 
         setAwersFile(null)
         setRewersFile(null)

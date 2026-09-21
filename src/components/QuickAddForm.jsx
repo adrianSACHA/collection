@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import PhotoCapture from './PhotoCapture'
 import FormField from './item-form/FormField'
 import { inputClass } from './item-form/formHelpers'
-import { uploadCoinPhotos } from '../lib/uploadPhoto'
+import { uploadItemPhotos } from '../lib/uploadPhoto'
 import { createItem } from '../collection/collectionApi'
 import { useToast } from './toast/toastContext'
 
@@ -67,7 +67,13 @@ export default function QuickAddForm({
   const addMutation = useMutation({
     mutationFn: async ({ payload, mode }) => {
       const item = await createItem(payload)
-      await uploadCoinPhotos(photos, item.id)
+      await uploadItemPhotos(
+        {
+          awers: photos?.awers?.file ?? null,
+          rewers: photos?.rewers?.file ?? null,
+        },
+        item.id
+      )
       return { item, mode }
     },
     onSuccess: ({ item, mode }) => {

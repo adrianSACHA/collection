@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { applyFiltersToQuery, getSortOption } from '../lib/itemFilters'
+import { getStoragePathFromUrl } from '../lib/uploadPhoto'
 
 // Deep module: JEDYNE miejsce, które zna tabele/bucket Supabase.
 // Komponenty i hooki wołają wyłącznie ten interfejs (seam), dzięki czemu
@@ -8,7 +9,6 @@ import { applyFiltersToQuery, getSortOption } from '../lib/itemFilters'
 // Supabase/PostgREST ma domyślny limit 1000 wierszy na zapytanie -
 // eksport dzielimy na porcje, aż dostaniemy komplet.
 const EXPORT_CHUNK_SIZE = 1000
-const PHOTO_URL_MARKER = '/object/public/photos/'
 
 /* --- Items: czytanie --- */
 
@@ -178,10 +178,7 @@ export async function removeItem(itemId) {
   if (photosSelectError) throw photosSelectError
 
   const paths = (photos || [])
-    .map((photo) => {
-      const idx = photo.url.indexOf(PHOTO_URL_MARKER)
-      return idx >= 0 ? photo.url.slice(idx + PHOTO_URL_MARKER.length) : null
-    })
+    .map((photo) => getStoragePathFromUrl(photo.url))
     .filter(Boolean)
 
   if (paths.length > 0) {
