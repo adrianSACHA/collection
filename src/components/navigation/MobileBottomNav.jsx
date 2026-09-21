@@ -102,7 +102,7 @@ export default function MobileBottomNav({
   collectionButtonRef,
 }) {
   const tabClass = (isActive) =>
-    `flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
+    `flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
       isActive ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
     }`
 

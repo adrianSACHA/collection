@@ -103,7 +103,7 @@ export default function PhotoPicker({
               type="button"
               onClick={clearSelectedFile}
               aria-label={`Usuń wybrane zdjęcie: ${label}`}
-              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
+              className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700"
             >
               ✕
             </button>
@@ -115,7 +115,7 @@ export default function PhotoPicker({
               onClick={onRemoveExisting}
               disabled={removing}
               aria-label={`Usuń zapisane zdjęcie: ${label}`}
-              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700 disabled:bg-gray-400"
+              className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-colors hover:bg-red-700 disabled:bg-gray-400"
             >
               {removing ? '...' : '✕'}
             </button>

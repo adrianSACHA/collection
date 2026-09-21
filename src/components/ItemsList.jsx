@@ -398,13 +398,13 @@ export default function ItemsList({
                         })()}
 
                         {item.unikat && (
-                          <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+                          <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
                             Unikat
                           </span>
                         )}
 
                         {item.do_kupienia && (
-                          <span className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                          <span className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white">
                             Do kupienia
                           </span>
                         )}
@@ -437,7 +437,7 @@ export default function ItemsList({
                         {!isCoin && banknoteSeries && (
                           <p
                             title={banknoteSeries}
-                            className="truncate text-[10px] font-medium text-gray-600"
+                            className="truncate text-[11px] font-medium text-gray-600"
                           >
                             {banknoteSeries}
                           </p>
@@ -624,7 +624,7 @@ export default function ItemsList({
                               {listBadges.map((badge) => (
                                 <span
                                   key={badge}
-                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${getBadgeClass(badge)}`}
+                                  className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${getBadgeClass(badge)}`}
                                 >
                                   {badge}
                                 </span>
@@ -644,7 +644,7 @@ export default function ItemsList({
 
                         <div className="ml-4 flex flex-shrink-0 flex-col items-center gap-2 text-right lg:ml-6 lg:w-32 lg:items-end">
                           {item.do_kupienia && (
-                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
                               Do kupienia
                             </span>
                           )}

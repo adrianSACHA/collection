@@ -161,7 +161,7 @@ function CountBadge({ value, active }) {
 
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
+      className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
         active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
       }`}
     >
@@ -242,7 +242,7 @@ export default function DesktopSidebar({
 
   const filterBadge =
     activeFilterCount > 0 ? (
-      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
+      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-semibold text-white">
         {activeFilterCount}
       </span>
     ) : null
@@ -261,7 +261,7 @@ export default function DesktopSidebar({
             onClick={onToggleCollapse}
             aria-label="Zwiń panel boczny"
             title="Zwiń panel boczny"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           >
             <CollapseIcon />
           </button>
@@ -269,7 +269,7 @@ export default function DesktopSidebar({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           <nav aria-label="Kolekcja">
-            <p className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
               Kolekcja
             </p>
 
@@ -323,7 +323,7 @@ export default function DesktopSidebar({
                 <FilterIcon className="h-4 w-4 flex-shrink-0 text-gray-500" />
                 <span className="flex-1 text-left">Filtry</span>
                 {activeFilterCount > 0 && (
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
                     {activeFilterCount}
                   </span>
                 )}
@@ -394,7 +394,7 @@ export default function DesktopSidebar({
             onClick={onToggleCollapse}
             aria-label="Rozwiń panel boczny"
             title="Rozwiń panel boczny"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           >
             <ExpandIcon />
           </button>

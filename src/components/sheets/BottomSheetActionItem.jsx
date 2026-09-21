@@ -46,7 +46,7 @@ export default function BottomSheetActionItem({
 
       {showCount && (
         <span
-          className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
+          className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
             active ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
           }`}
         >
