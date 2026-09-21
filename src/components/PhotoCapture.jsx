@@ -206,10 +206,10 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
       </div>
 
       <div className="flex justify-center gap-4 text-sm">
-        <span className={awers ? 'text-green-600' : 'text-gray-400'}>
+        <span className={awers ? 'text-green-600' : 'text-gray-500'}>
           {awers ? '✓ Awers' : '○ Awers'}
         </span>
-        <span className={rewers ? 'text-green-600' : 'text-gray-400'}>
+        <span className={rewers ? 'text-green-600' : 'text-gray-500'}>
           {rewers ? '✓ Rewers' : '○ Rewers'}
         </span>
       </div>
