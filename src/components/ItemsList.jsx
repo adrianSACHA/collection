@@ -104,6 +104,8 @@ function formatLocationLine(location, watermarkName) {
 
 export default function ItemsList({
   filteredItems,
+  loading = false,
+  error = null,
   onModeChange,
   onItemsChanged,
   pagination,
@@ -299,16 +301,38 @@ export default function ItemsList({
   return (
     <div className="w-full">
       <div className="mx-auto max-w-md space-y-3 lg:max-w-6xl">
-        {filteredItems === null ? (
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 p-6 text-center"
+          >
+            <p className="text-red-700">{error}</p>
+          </div>
+        ) : loading && filteredItems === null ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center justify-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center"
+          >
+            <span
+              aria-hidden="true"
+              className="h-5 w-5 rounded-full border-2 border-blue-600/30 border-t-blue-600 motion-safe:animate-spin"
+            />
+            <p className="text-gray-600">Wczytywanie pozycji…</p>
+          </div>
+        ) : filteredItems === null ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-            <p className="text-gray-500">
-              Użyj filtrów powyżej aby wyświetlić przedmioty.
+            <p className="text-gray-600">
+              Użyj filtrów, aby wyświetlić przedmioty.
             </p>
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-            <p className="text-gray-500">
+            <p className="text-gray-600">
               Brak przedmiotów spełniających kryteria.
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              Zmień lub wyczyść filtry, aby zobaczyć więcej.
             </p>
           </div>
         ) : (

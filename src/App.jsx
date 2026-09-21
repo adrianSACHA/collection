@@ -136,6 +136,8 @@ function CollectionApp() {
     items,
     pagination,
     draft,
+    loading,
+    error,
     activeFilterCount,
     clear: clearFilters,
     refresh,
@@ -407,6 +409,8 @@ function CollectionApp() {
               <ItemsList
                 key={view}
                 filteredItems={items}
+                loading={loading}
+                error={error}
                 onModeChange={setIsDetailView}
                 onItemsChanged={refreshList}
                 pagination={pagination}
