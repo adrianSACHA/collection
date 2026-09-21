@@ -192,8 +192,17 @@ export default function QuickAddForm({
             {/* Typ - chowany, gdy typ narzuca aktywna zakładka */}
             {!fixedType && (
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Typ *</label>
-                <div className="flex gap-2">
+                <span
+                  id="quick-typ-label"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Typ *
+                </span>
+                <div
+                  role="group"
+                  aria-labelledby="quick-typ-label"
+                  className="flex gap-2"
+                >
                   <button
                     type="button"
                     aria-pressed={typ === 'moneta'}

@@ -149,15 +149,23 @@ export default function ItemForm({
 
                 <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:gap-8">
                     <div className="space-y-5">
-                        {!fixedType && (
+                                                {!fixedType && (
                             <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">
+                                <span
+                                    id="typ-label"
+                                    className="mb-1 block text-sm font-medium text-gray-700"
+                                >
                                     Typ *
-                                </label>
+                                </span>
 
-                                <div className="flex gap-2">
+                                <div
+                                    role="group"
+                                    aria-labelledby="typ-label"
+                                    className="flex gap-2"
+                                >
                                     <button
                                         type="button"
+                                        aria-pressed={v.typ === 'moneta'}
                                         onClick={() => setField('typ', 'moneta')}
                                         className={`min-h-[44px] flex-1 rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${v.typ === 'moneta'
                                                 ? 'bg-blue-600 text-white'
@@ -167,8 +175,9 @@ export default function ItemForm({
                                         Moneta
                                     </button>
 
-                                    <button
+                                                                        <button
                                         type="button"
+                                        aria-pressed={v.typ === 'banknot'}
                                         onClick={() => setField('typ', 'banknot')}
                                         className={`min-h-[44px] flex-1 rounded-lg px-4 py-2 font-medium transition-colors lg:min-h-[40px] ${v.typ === 'banknot'
                                                 ? 'bg-blue-600 text-white'
