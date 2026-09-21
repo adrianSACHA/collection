@@ -1,11 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import {
-  DEFAULT_SORT,
-  getDefaultFilters,
-  applyFiltersToQuery,
-  getSortOption,
-} from '../lib/itemFilters'
+import { DEFAULT_SORT, getDefaultFilters } from '../lib/itemFilters'
+import { listItems } from './collectionApi'
 
 // Rozmiar strony listy (bez zmian względem poprzedniego ItemFilters).
 export const PAGE_SIZE = 20
@@ -66,28 +61,12 @@ export function useCollection({ fixedType } = {}) {
           typ: fixedType || base.typ,
         }
 
-        const activeSort = getSortOption(filters.sortBy)
-        const start = page * PAGE_SIZE
-        const end = start + PAGE_SIZE - 1
+        const { rows, total } = await listItems(filters, {
+          page,
+          pageSize: PAGE_SIZE,
+        })
 
-        let query = supabase
-          .from('items')
-          .select('*', { count: 'exact' })
-          .order(activeSort.column, {
-            ascending: activeSort.ascending,
-            nullsFirst: false,
-          })
-          .range(start, end)
-
-        query = applyFiltersToQuery(query, filters)
-
-        const { data, error: err, count } = await query
-
-        if (err) throw err
-
-        const rows = data || []
-        const total = count || 0
-        const loaded = start + rows.length
+        const loaded = page * PAGE_SIZE + rows.length
         const hasMore = loaded < total
 
         setItems((previous) => {

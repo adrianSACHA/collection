@@ -4,7 +4,7 @@ import PhotoCapture from './PhotoCapture'
 import FormField from './item-form/FormField'
 import { inputClass } from './item-form/formHelpers'
 import { uploadCoinPhotos } from '../lib/uploadPhoto'
-import { insertItem } from '../lib/itemsApi'
+import { createItem } from '../collection/collectionApi'
 import { useToast } from './toast/toastContext'
 
 export default function QuickAddForm({
@@ -66,7 +66,7 @@ export default function QuickAddForm({
 
   const addMutation = useMutation({
     mutationFn: async ({ payload, mode }) => {
-      const item = await insertItem(payload)
+      const item = await createItem(payload)
       await uploadCoinPhotos(photos, item.id)
       return { item, mode }
     },

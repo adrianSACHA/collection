@@ -16,7 +16,7 @@ import CollectionSwitcherSheet from './components/navigation/CollectionSwitcherS
 import MoreSheet from './components/navigation/MoreSheet'
 import FiltersPanel from './components/collection/FiltersPanel'
 import { exportItemsToCsv } from './components/items-list/exportCsv'
-import { fetchAllItemsForExport } from './lib/itemsApi'
+import { countByType, listAllItems } from './collection/collectionApi'
 import { supabase } from './lib/supabase'
 import { useCollection } from './collection/useCollection'
 import { CollectionContext } from './collection/collectionContext'
@@ -143,25 +143,9 @@ function CollectionApp() {
     syncType,
   } = collection
 
-  // Liczniki pozycji per typ - osobne, lekkie zapytania `head: true` (bez wierszy).
-  const fetchTypeCounts = useCallback(async () => {
-    const [banknotRes, monetaRes] = await Promise.all([
-      supabase
-        .from('items')
-        .select('*', { count: 'exact', head: true })
-        .eq('typ', 'banknot'),
-      supabase
-        .from('items')
-        .select('*', { count: 'exact', head: true })
-        .eq('typ', 'moneta'),
-    ])
-
-    return {
-      banknot:
-        typeof banknotRes.count === 'number' ? banknotRes.count : null,
-      moneta: typeof monetaRes.count === 'number' ? monetaRes.count : null,
-    }
-  }, [])
+  // Liczniki pozycji per typ - lekkie zapytania `head: true` (bez wierszy),
+  // schowane za modułem danych kolekcji.
+  const fetchTypeCounts = useCallback(() => countByType(), [])
 
   useEffect(() => {
     async function loadTypeCounts() {
@@ -191,7 +175,7 @@ function CollectionApp() {
       setIsExporting(true)
       setExportError(null)
 
-      const allItems = await fetchAllItemsForExport(draft)
+      const allItems = await listAllItems(draft)
 
       if (allItems.length === 0) {
         setExportError('Brak pozycji do eksportu dla bieżących filtrów.')

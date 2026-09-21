@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { supabase } from '../../lib/supabase'
 import { uploadPhoto, deletePhoto } from '../../lib/uploadPhoto'
+import {
+  createItem,
+  getItem,
+  listPhotosForItem,
+  updateItem,
+} from '../../collection/collectionApi'
 import { useToast } from '../toast/toastContext'
 import {
   buildPayload,
@@ -79,16 +84,11 @@ export function useItemForm({
       if (!idToUse) return
 
       // Jak w loadItem - stan ustawiamy w callbacku łańcucha, nie synchronicznie.
-      return supabase
-        .from('item_photos')
-        .select('typ, url')
-        .eq('item_id', idToUse)
-        .then(({ data, error: queryError }) => {
-          if (queryError) throw queryError
-
+      return listPhotosForItem(idToUse)
+        .then((data) => {
           const photosMap = {}
 
-          for (const photo of data || []) {
+          for (const photo of data) {
             photosMap[photo.typ] = photo.url
           }
 
@@ -104,13 +104,8 @@ export function useItemForm({
   const loadItem = useCallback(() => {
     // Aktualizacje stanu w callbackach łańcucha (po await/rozstrzygnięciu) -
     // dzięki temu nie ustawiamy stanu synchronicznie w efekcie wywołującym.
-    supabase
-      .from('items')
-      .select('*')
-      .eq('id', itemId)
-      .single()
-      .then(({ data, error: queryError }) => {
-        if (queryError) throw queryError
+    getItem(itemId)
+      .then((data) => {
         if (!data) throw new Error('Przedmiot nie znaleziony.')
 
         setValues(mapItemToFormState(data))
@@ -278,14 +273,7 @@ export function useItemForm({
         const payload = buildPayload(values, effectiveTyp)
 
         if (isEditMode) {
-          const { data, error: updateError } = await supabase
-            .from('items')
-            .update(payload)
-            .eq('id', itemId)
-            .select()
-            .single()
-
-          if (updateError) throw updateError
+          const data = await updateItem(itemId, payload)
 
           setSuccess(true)
           toast.success('Przedmiot zaktualizowany!')
@@ -296,27 +284,7 @@ export function useItemForm({
           return
         }
 
-        const { data: userData, error: userError } =
-          await supabase.auth.getUser()
-
-        if (userError) throw userError
-
-        if (!userData?.user?.id) {
-          throw new Error('Nie jesteś zalogowany.')
-        }
-
-        const payloadWithUserId = {
-          ...payload,
-          user_id: userData.user.id,
-        }
-
-        const { data, error: insertError } = await supabase
-          .from('items')
-          .insert(payloadWithUserId)
-          .select()
-          .single()
-
-        if (insertError) throw insertError
+        const data = await createItem(payload)
 
         setSuccess(true)
 

@@ -1,7 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { deleteItem } from '../lib/itemsApi'
-import { supabase } from '../lib/supabase'
+import {
+  listPhotosByItemTyp,
+  listPhotosForItem,
+  removeItem,
+} from '../collection/collectionApi'
 import LoadingFallback from './LoadingFallback'
 import ItemDetail from './items-list/ItemDetail'
 import WatermarkThumbnail from './items-list/WatermarkThumbnail'
@@ -134,20 +137,18 @@ export default function ItemsList({
     const ids = itemsKey.split(',')
 
     async function loadThumbnails() {
-      const { data, error } = await supabase
-        .from('item_photos')
-        .select('item_id, typ, url')
-        .in('typ', ['awers', 'rewers', 'znak_wodny'])
-        .in('item_id', ids)
+      let data
 
-      if (error) {
+      try {
+        data = await listPhotosByItemTyp(ids)
+      } catch (error) {
         console.error('Błąd wczytywania miniatur:', error)
         return
       }
 
       const map = {}
 
-      for (const row of data || []) {
+      for (const row of data) {
         if (!map[row.item_id]) {
           map[row.item_id] = {}
         }
@@ -165,19 +166,18 @@ export default function ItemsList({
     if (!selectedItem || isEditing) return
 
     async function loadSelectedPhotos() {
-      const { data, error } = await supabase
-        .from('item_photos')
-        .select('typ, url')
-        .eq('item_id', selectedItem.id)
+      let data
 
-      if (error) {
+      try {
+        data = await listPhotosForItem(selectedItem.id)
+      } catch (error) {
         console.error('Błąd wczytywania zdjęć przedmiotu:', error)
         return
       }
 
       const map = {}
 
-      for (const row of data || []) {
+      for (const row of data) {
         map[row.typ] = row.url
       }
 
@@ -188,7 +188,7 @@ export default function ItemsList({
   }, [selectedItem, isEditing])
 
   const deleteMutation = useMutation({
-    mutationFn: (itemId) => deleteItem(itemId),
+    mutationFn: (itemId) => removeItem(itemId),
     onSuccess: () => {
       onItemsChanged?.()
       toast.success('Przedmiot usunięty.')

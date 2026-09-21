@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { listFacets } from '../../collection/collectionApi'
 
 /**
  * Hook pobierający opcje słownikowe do filtrów:
@@ -15,24 +15,12 @@ export function useFilterOptions() {
 
     async function loadFacetOptions() {
       try {
-        const { data, error: err } = await supabase
-          .from('items')
-          .select('mennica, material')
-
-        if (err) throw err
+        const { mennica, material } = await listFacets()
 
         if (!active) return
 
-        const mennice = new Set()
-        const materialy = new Set()
-
-        for (const row of data || []) {
-          if (row.mennica?.trim()) mennice.add(row.mennica.trim())
-          if (row.material?.trim()) materialy.add(row.material.trim())
-        }
-
-        setMennicaOptions(Array.from(mennice).sort())
-        setMaterialOptions(Array.from(materialy).sort())
+        setMennicaOptions(mennica)
+        setMaterialOptions(material)
       } catch (err) {
         console.error('Błąd wczytywania opcji filtrów:', err)
       }
