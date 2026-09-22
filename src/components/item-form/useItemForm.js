@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { deletePhoto, uploadItemPhotos } from '../../lib/uploadPhoto'
 import {
   createItem,
+  deletePhoto,
   getItem,
   listPhotosForItem,
   updateItem,
+  uploadItemPhotos,
 } from '../../collection/collectionApi'
 import { useToast } from '../toast/toastContext'
 import {

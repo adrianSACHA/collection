@@ -3,8 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import PhotoCapture from './PhotoCapture'
 import FormField from './item-form/FormField'
 import { inputClass } from './item-form/formHelpers'
-import { uploadItemPhotos } from '../lib/uploadPhoto'
-import { createItem } from '../collection/collectionApi'
+import { createItem, uploadItemPhotos } from '../collection/collectionApi'
 import { useToast } from './toast/toastContext'
 
 export default function QuickAddForm({
