@@ -17,7 +17,7 @@ import MoreSheet from './components/navigation/MoreSheet'
 import FiltersPanel from './components/collection/FiltersPanel'
 import { exportItemsToCsv } from './components/items-list/exportCsv'
 import { countByType, listAllItems } from './collection/collectionApi'
-import { supabase } from './lib/supabase'
+import { signOut } from './auth/authApi'
 import { useCollection } from './collection/useCollection'
 import { CollectionContext } from './collection/collectionContext'
 
@@ -293,7 +293,7 @@ function CollectionApp() {
           onQuickAdd={() => goToAdd('szybki')}
           onFullForm={openFullForm}
           typLabel={typLabel}
-          onLogout={() => supabase.auth.signOut()}
+          onLogout={() => signOut()}
         />
 
         <main className="flex-1 pb-24 lg:overflow-auto lg:pb-0">
@@ -470,7 +470,7 @@ function CollectionApp() {
           onExport={handleExportAll}
           isExporting={isExporting}
           exportError={exportError}
-          onLogout={() => supabase.auth.signOut()}
+          onLogout={() => signOut()}
           triggerRef={moreButtonRef}
         />
       </div>

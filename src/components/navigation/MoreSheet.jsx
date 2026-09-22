@@ -5,7 +5,7 @@ import BottomSheetActionItem from '../sheets/BottomSheetActionItem'
 // Mobilny bottom sheet "Więcej" (na wspólnych primitywach).
 // Pokazuje WYŁĄCZNIE akcje, które faktycznie istnieją w aplikacji:
 //   - Eksport CSV (handleExportAll w App.jsx),
-//   - Wylogowanie (supabase.auth.signOut()).
+//   - Wylogowanie (signOut z authApi, przez App.jsx).
 
 const TITLE_ID = 'more-sheet-title'
 

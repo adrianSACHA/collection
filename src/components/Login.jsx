@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { signInWithPassword } from '../auth/authApi'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -13,7 +13,7 @@ export default function Login() {
     setError(null)
     setLoading(true)
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await signInWithPassword({
       email: email.trim(),
       password,
     })

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getSession, onAuthStateChange } from '../auth/authApi'
 import LoadingFallback from './LoadingFallback'
 
 const Login = lazy(() => import('./Login'))
@@ -8,15 +8,13 @@ export default function AuthGate({ children }) {
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    getSession().then(({ data }) => {
       setSession(data.session)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession)
-      }
-    )
+    const { data: listener } = onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
+    })
 
     return () => listener.subscription.unsubscribe()
   }, [])
