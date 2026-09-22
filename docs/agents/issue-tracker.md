@@ -2,6 +2,10 @@
 
 Issues and specs for this repo live as markdown files in `.scratch/`.
 
+> **`.scratch/` is deliberately local.** It is listed in `.gitignore` and must
+> not be committed or pushed - the tracker is per-machine, not shared.
+> Creating tickets there is expected; staging them for commit is not.
+
 ## Conventions
 
 - One feature per directory: `.scratch/<feature-slug>/`
@@ -13,6 +17,8 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 ## When a skill says "publish to the issue tracker"
 
 Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).
+
+Leave it untracked - `.scratch/` is gitignored on purpose.
 
 ## When a skill says "fetch the relevant ticket"
 
