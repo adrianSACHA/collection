@@ -477,10 +477,6 @@ export default function ItemsList({
                   const watermarkName = isCoin
                     ? ''
                     : formatWatermarkName(item)
-                  const locationLine = formatLocationLine(
-                    location,
-                    watermarkName
-                  )
 
                   return (
                     <button
@@ -566,9 +562,11 @@ export default function ItemsList({
                               </p>
                             )}
 
-                            {locationLine && (
+                            {/* Ta sama linia co na desktopie: bez nazwy znaku
+                                wodnego, bo niesie ja miniatura obok. */}
+                            {location && (
                               <p className="truncate text-sm text-gray-500">
-                                {locationLine}
+                                {location}
                               </p>
                             )}
 
