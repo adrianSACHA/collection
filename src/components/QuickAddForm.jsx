@@ -69,8 +69,8 @@ export default function QuickAddForm({
       const item = await createItem(payload)
       await uploadItemPhotos(
         {
-          awers: photos?.awers?.file ?? null,
-          rewers: photos?.rewers?.file ?? null,
+          awers: photos?.awers ?? null,
+          rewers: photos?.rewers ?? null,
         },
         item.id
       )

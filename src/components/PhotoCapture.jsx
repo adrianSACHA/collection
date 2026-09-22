@@ -1,112 +1,69 @@
 import { useEffect, useRef, useState } from 'react'
 import CropModal from './item-form/CropModal'
+import { useStagedPhoto } from '../hooks/useStagedPhoto'
 
 export default function PhotoCapture({ onPhotosReady, aspect }) {
-  const [awers, setAwers] = useState(null)
-  const [rewers, setRewers] = useState(null)
   const [activeSide, setActiveSide] = useState('awers')
   const [cropping, setCropping] = useState(null) // 'awers' | 'rewers' | null
 
-  // Trzymamy bieżące zdjęcia w ref, żeby cleanup przy odmontowaniu zwalniał
-  // aktualne object URL-e (podglądy), a nie te z pierwszego renderu.
-  const photosRef = useRef({ awers, rewers })
+  // Awers i rewers to dwie niezależne instancje tego samego hooka - obie mają
+  // ten sam cykl życia zdjęcia (podgląd, oryginał do kadrowania, sprzątanie
+  // object URL-i przy odmontowaniu).
+  const awers = useStagedPhoto()
+  const rewers = useStagedPhoto()
+
+  const stagedBySide = { awers, rewers }
+  const activeStaged = stagedBySide[activeSide]
+
+  // Rodzic dostaje wyłącznie pliki do wgrania. Object URL-e zostają w tym
+  // komponencie (zwalnia je hook), więc nie wypuszczamy ich na zewnątrz -
+  // rodzic mógłby trzymać adres, który już nie istnieje.
+  //
+  // Jedno miejsce zgłaszające stan, zamiast ręcznego wywołania w każdym
+  // handlerze: wcześniej „Popraw zdjęcie" rewersu i zdjęcie samego rewersu
+  // nie docierały do rodzica, więc skasowany plik wciąż szedł do uploadu.
+  const onPhotosReadyRef = useRef(onPhotosReady)
 
   useEffect(() => {
-    photosRef.current = { awers, rewers }
-  }, [awers, rewers])
+    onPhotosReadyRef.current = onPhotosReady
+  }, [onPhotosReady])
 
   useEffect(() => {
-    return () => {
-      const { awers: currentAwers, rewers: currentRewers } = photosRef.current
-      if (currentAwers?.previewUrl) URL.revokeObjectURL(currentAwers.previewUrl)
-      if (currentRewers?.previewUrl) URL.revokeObjectURL(currentRewers.previewUrl)
-    }
-  }, [])
-
-  const revokePhotoUrl = (photo) => {
-    if (photo?.previewUrl) URL.revokeObjectURL(photo.previewUrl)
-  }
-
-  // Zgłaszamy komponentowi nadrzędnemu stan zdjęć. Awers jest wymagany do zapisu
-  // (uploadPhoto i tak pomija brakujące strony), rewers opcjonalny.
-  const emitPhotos = (nextAwers, nextRewers) => {
-    if (nextAwers && onPhotosReady) {
-      onPhotosReady({ awers: nextAwers, rewers: nextRewers || null })
-    }
-  }
+    onPhotosReadyRef.current?.({
+      awers: awers.file,
+      rewers: rewers.file,
+    })
+  }, [awers.file, rewers.file])
 
   const handlePhoto = (e, side) => {
     const file = e.target.files?.[0]
+
     // Reset wartości inputa, żeby kolejny wybór (nawet tego samego pliku)
     // zawsze odpalał onChange - na mobile bywa to źródłem "braku reakcji".
     e.target.value = ''
 
     if (!file) return
 
-    // Podmiana zdjęcia po tej samej stronie: zwalniamy poprzedni podgląd.
-    revokePhotoUrl(side === 'awers' ? awers : rewers)
-
-    const previewUrl = URL.createObjectURL(file)
-    const newPhoto = { file, previewUrl }
-
-    let nextAwers = awers
-    let nextRewers = rewers
-
-    if (side === 'awers') {
-      nextAwers = newPhoto
-      setAwers(newPhoto)
-    } else {
-      nextRewers = newPhoto
-      setRewers(newPhoto)
-    }
-
-    // Nie przełączamy automatycznie na drugą stronę - zostajemy na tej,
-    // którą właśnie zrobiono, żeby od razu można było ją przyciąć ("✂ Przytnij").
-
-    emitPhotos(nextAwers, nextRewers)
+    stagedBySide[side].select(file)
   }
 
+  // Nie przełączamy automatycznie na drugą stronę - zostajemy na tej, którą
+  // właśnie zrobiono, żeby od razu można było ją przyciąć ("✂ Przytnij").
   const retakePhoto = (side) => {
-    revokePhotoUrl(side === 'awers' ? awers : rewers)
-
-    if (side === 'awers') {
-      setAwers(null)
-      onPhotosReady?.(null)
-    } else {
-      setRewers(null)
-    }
+    stagedBySide[side].clear()
     setActiveSide(side)
   }
 
-  // Po zatwierdzeniu kadrowania podmieniamy plik na przycięty (preview + stan).
+  // Po zatwierdzeniu kadrowania hook podmienia plik na przycięty i utrzymuje
+  // oryginał, więc „Przytnij" można powtarzać bez utraty jakości.
   const handleCropConfirm = (blob) => {
-    const side = cropping
-    if (!side) return
+    if (!cropping) return
 
-    // Zwalniamy poprzedni podgląd tej strony przed podmianą na przycięty.
-    revokePhotoUrl(side === 'awers' ? awers : rewers)
-
-    const croppedFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
-    const previewUrl = URL.createObjectURL(croppedFile)
-    const newPhoto = { file: croppedFile, previewUrl }
-
-    let nextAwers = awers
-    let nextRewers = rewers
-
-    if (side === 'awers') {
-      nextAwers = newPhoto
-      setAwers(newPhoto)
-    } else {
-      nextRewers = newPhoto
-      setRewers(newPhoto)
-    }
-
+    stagedBySide[cropping].applyCrop(blob)
     setCropping(null)
-    emitPhotos(nextAwers, nextRewers)
   }
 
   const photoInputId = `photo-upload-${activeSide}`
-  const currentPhoto = activeSide === 'awers' ? awers : rewers
 
   return (
     <div className="space-y-4">
@@ -122,7 +79,7 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Awers {awers ? '✓' : ''}
+          Awers {awers.file ? '✓' : ''}
         </button>
 
         <button
@@ -136,15 +93,15 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Rewers {rewers ? '✓' : ''}
+          Rewers {rewers.file ? '✓' : ''}
         </button>
       </div>
 
       <div className="relative aspect-[4/3] overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-100">
-        {currentPhoto ? (
+        {activeStaged.previewUrl ? (
           <img
-            key={currentPhoto.previewUrl}
-            src={currentPhoto.previewUrl}
+            key={activeStaged.previewUrl}
+            src={activeStaged.previewUrl}
             alt={activeSide === 'awers' ? 'Awers' : 'Rewers'}
             decoding="async"
             className="h-full w-full object-cover"
@@ -163,7 +120,7 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
       </div>
 
       <div className="flex justify-center gap-3">
-        {currentPhoto ? (
+        {activeStaged.previewUrl ? (
           <>
             <button
               type="button"
@@ -206,17 +163,17 @@ export default function PhotoCapture({ onPhotosReady, aspect }) {
       </div>
 
       <div className="flex justify-center gap-4 text-sm">
-        <span className={awers ? 'text-green-600' : 'text-gray-500'}>
-          {awers ? '✓ Awers' : '○ Awers'}
+        <span className={awers.file ? 'text-green-600' : 'text-gray-500'}>
+          {awers.file ? '✓ Awers' : '○ Awers'}
         </span>
-        <span className={rewers ? 'text-green-600' : 'text-gray-500'}>
-          {rewers ? '✓ Rewers' : '○ Rewers'}
+        <span className={rewers.file ? 'text-green-600' : 'text-gray-500'}>
+          {rewers.file ? '✓ Rewers' : '○ Rewers'}
         </span>
       </div>
 
-      {cropping && (cropping === 'awers' ? awers : rewers) && (
+      {cropping && stagedBySide[cropping].originalUrl && (
         <CropModal
-          imageSrc={(cropping === 'awers' ? awers : rewers).previewUrl}
+          imageSrc={stagedBySide[cropping].originalUrl}
           aspect={aspect}
           onCancel={() => setCropping(null)}
           onConfirm={handleCropConfirm}
