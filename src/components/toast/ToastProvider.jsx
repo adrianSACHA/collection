@@ -84,15 +84,14 @@ export function ToastProvider({ children }) {
 
       {/* Container nie blokuje kliknięć (pointer-events-none); klikalne są
           same toasty. Na mobile trzymamy je nad dolnym menu (bottom-20). */}
-      <div
-        className="pointer-events-none fixed inset-x-0 bottom-20 z-[100] flex flex-col items-center gap-2 px-4 lg:bottom-4 lg:items-end lg:px-6"
-        aria-live="polite"
-        aria-atomic="false"
-      >
+      {/* Bez aria-live na kontenerze - inaczej komunikat byłby ogłaszany
+          dwukrotnie (kontener + rola dziecka). Każdy toast ma własną rolę. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[100] flex flex-col items-center gap-2 px-4 lg:bottom-4 lg:items-end lg:px-6">
         {toasts.map((toast) => (
+          /* role=status (polite) dla sukcesu/info, role=alert (assertive) dla błędu. */
           <div
             key={toast.id}
-            role="status"
+            role={toast.type === 'error' ? 'alert' : 'status'}
             className={`pointer-events-auto flex w-full max-w-sm items-start gap-2 rounded-lg border px-4 py-3 text-sm shadow-lg ${
               TOAST_STYLES[toast.type] || TOAST_STYLES.info
             }`}
