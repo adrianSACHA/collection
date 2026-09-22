@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { useInertBackground } from '../../hooks/useInertBackground'
 
 // Reużywalny modalny bottom sheet (mobile). Ujednolica dla wszystkich sheetów:
 //  - overlay (jeden styl, jeden z-index),
@@ -17,6 +18,11 @@ export default function BottomSheet({
 }) {
   const panelRef = useRef(null)
   const onCloseRef = useRef(onClose)
+
+  // Tło unieruchamiamy jako PIERWSZY efekt: sprzątanie idzie w kolejności
+  // deklaracji, a przywrócenie focusu na trigger (niżej) musi trafić na
+  // element, który nie jest już `inert`.
+  useInertBackground(panelRef, isOpen)
 
   // Pułapka focusu (Tab) w obrębie panelu. Fokus początkowy i przywrócenie
   // focusu na trigger są obsługiwane niżej, więc ich tu nie dublujemy.

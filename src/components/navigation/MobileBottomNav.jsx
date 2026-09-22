@@ -100,6 +100,7 @@ export default function MobileBottomNav({
   addButtonRef,
   moreButtonRef,
   collectionButtonRef,
+  filtersButtonRef,
 }) {
   const tabClass = (isActive) =>
     `flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300 ${
@@ -129,9 +130,13 @@ export default function MobileBottomNav({
           <span>{collectionLabel}</span>
         </button>
 
+        {/* Filtry otwierają modalny sheet - stąd `aria-haspopup` i ref
+            pozwalający wrócić na ten przycisk focusem po zamknięciu. */}
         <button
+          ref={filtersButtonRef}
           type="button"
           onClick={onOpenFilters}
+          aria-haspopup="dialog"
           aria-current={activeTab === 'filtry' ? 'page' : undefined}
           className={tabClass(activeTab === 'filtry')}
         >
@@ -157,6 +162,7 @@ export default function MobileBottomNav({
           ref={moreButtonRef}
           type="button"
           onClick={onOpenMore}
+          aria-haspopup="dialog"
           aria-current={activeTab === 'wiecej' ? 'page' : undefined}
           className={tabClass(activeTab === 'wiecej')}
         >

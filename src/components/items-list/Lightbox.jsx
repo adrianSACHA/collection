@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { useInertBackground } from '../../hooks/useInertBackground'
 
 export default function Lightbox({ url, label, onClose }) {
   const dialogRef = useRef(null)
   const closeRef = useRef(null)
   const isOpen = Boolean(url)
+  // Tło unieruchamiamy PRZED pułapką focusu: sprzątanie efektów idzie
+  // w kolejności deklaracji, a przywrócenie focusu na trigger musi trafić
+  // na element, który nie jest już `inert`.
+  useInertBackground(dialogRef, isOpen)
 
   // Pułapka focusu + focus na przycisku zamykania; po zamknięciu focus wraca
   // tam, skąd otwarto powiększenie.

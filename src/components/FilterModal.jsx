@@ -7,9 +7,14 @@ import BottomSheetHeader from './sheets/BottomSheetHeader'
 
 const TITLE_ID = 'filter-sheet-title'
 
-export default function FilterModal({ isOpen, onClose, children }) {
+export default function FilterModal({ isOpen, onClose, triggerRef, children }) {
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} ariaLabelledby={TITLE_ID}>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      triggerRef={triggerRef}
+      ariaLabelledby={TITLE_ID}
+    >
       <BottomSheetHeader
         id={TITLE_ID}
         title="Filtry i sortowanie"

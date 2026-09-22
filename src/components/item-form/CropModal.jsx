@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { useInertBackground } from '../../hooks/useInertBackground'
 import Cropper from 'react-easy-crop'
 import 'react-easy-crop/react-easy-crop.css'
 import { getCroppedImg } from '../../lib/cropImage'
@@ -25,6 +26,10 @@ export default function CropModal({ imageSrc, aspect, onCancel, onConfirm }) {
   const [error, setError] = useState(null)
 
   const dialogRef = useRef(null)
+
+  // Tło unieruchamiamy przed pułapką focusu - sprzątanie efektów idzie w
+  // kolejności deklaracji, a powrót focusu musi trafić na odblokowany element.
+  useInertBackground(dialogRef, true)
 
   // Modal jest montowany tylko gdy otwarty - pułapka aktywna od razu, fokus
   // ląduje na pierwszym elemencie (przycisk ✕), po zamknięciu wraca na trigger.

@@ -129,6 +129,7 @@ function CollectionApp() {
   const addButtonRef = useRef(null)
   const moreButtonRef = useRef(null)
   const collectionButtonRef = useRef(null)
+  const filtersButtonRef = useRef(null)
 
   // Jedno źródło prawdy: filtry + wyniki + paginacja.
   const collection = useCollection({ fixedType: view })
@@ -306,6 +307,7 @@ function CollectionApp() {
                   <FilterModal
                     isOpen={isMobileFiltersOpen}
                     onClose={closeMobileFilters}
+                    triggerRef={filtersButtonRef}
                   >
                     <FiltersPanel
                       hideHeader
@@ -449,6 +451,7 @@ function CollectionApp() {
             addButtonRef={addButtonRef}
             moreButtonRef={moreButtonRef}
             collectionButtonRef={collectionButtonRef}
+            filtersButtonRef={filtersButtonRef}
           />
         )}
 

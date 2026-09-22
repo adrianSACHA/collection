@@ -86,7 +86,13 @@ export function ToastProvider({ children }) {
           same toasty. Na mobile trzymamy je nad dolnym menu (bottom-20). */}
       {/* Bez aria-live na kontenerze - inaczej komunikat byłby ogłaszany
           dwukrotnie (kontener + rola dziecka). Każdy toast ma własną rolę. */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[100] flex flex-col items-center gap-2 px-4 lg:bottom-4 lg:items-end lg:px-6">
+      {/* data-inert-exempt: gdy pod warstwą toastów wisi modal, `useInertBackground`
+          unieruchamia całe tło - ta warstwa musi zostać „żywa", inaczej
+          komunikat nie dotrze do czytnika ekranu. */}
+      <div
+        data-inert-exempt
+        className="pointer-events-none fixed inset-x-0 bottom-20 z-[100] flex flex-col items-center gap-2 px-4 lg:bottom-4 lg:items-end lg:px-6"
+      >
         {toasts.map((toast) => (
           /* role=status (polite) dla sukcesu/info, role=alert (assertive) dla błędu. */
           <div
