@@ -1,9 +1,9 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DEFAULT_SORT, getDefaultFilters } from '../lib/itemFilters'
+import { getDefaultFilters } from '../lib/itemFilters'
 import { listItems } from './collectionApi'
 
 // Rozmiar strony listy (bez zmian względem poprzedniego ItemFilters).
-export const PAGE_SIZE = 20
+const PAGE_SIZE = 20
 
 function emptyPagination() {
   return { total: 0, loaded: 0, page: 0, hasMore: false }
@@ -181,7 +181,5 @@ export function useCollection({ fixedType } = {}) {
     refresh,
 
     activeFilterCount,
-
-    defaultSort: DEFAULT_SORT,
   }
 }

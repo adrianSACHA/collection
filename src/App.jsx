@@ -147,22 +147,19 @@ function CollectionApp() {
 
   // Liczniki pozycji per typ - lekkie zapytania `head: true` (bez wierszy),
   // schowane za modułem danych kolekcji.
-  const fetchTypeCounts = useCallback(() => countByType(), [])
-
   useEffect(() => {
     async function loadTypeCounts() {
-      const counts = await fetchTypeCounts()
-      setTypeCounts(counts)
+      setTypeCounts(await countByType())
     }
 
     loadTypeCounts()
-  }, [fetchTypeCounts])
+  }, [])
 
   // Wymusza ponowne wczytanie listy z bieżącymi filtrami po zapisie/usunięciu.
   const refreshList = useCallback(() => {
     refresh()
-    fetchTypeCounts().then((counts) => setTypeCounts(counts))
-  }, [refresh, fetchTypeCounts])
+    countByType().then((counts) => setTypeCounts(counts))
+  }, [refresh])
 
   const closeMobileFilters = useCallback(() => {
     setIsMobileFiltersOpen(false)

@@ -12,7 +12,7 @@ const EXPORT_CHUNK_SIZE = 1000
 
 /* --- Items: czytanie --- */
 
-function buildItemsQuery(filters, { page = 0, pageSize, withCount = false } = {}) {
+function buildItemsQuery(filters, { start, end, withCount = false } = {}) {
   const sort = getSortOption(filters?.sortBy)
 
   let query = supabase
@@ -20,9 +20,8 @@ function buildItemsQuery(filters, { page = 0, pageSize, withCount = false } = {}
     .select('*', withCount ? { count: 'exact' } : undefined)
     .order(sort.column, { ascending: sort.ascending, nullsFirst: false })
 
-  if (typeof pageSize === 'number') {
-    const start = page * pageSize
-    query = query.range(start, start + pageSize - 1)
+  if (typeof start === 'number' && typeof end === 'number') {
+    query = query.range(start, end)
   }
 
   return applyFiltersToQuery(query, filters)
@@ -33,9 +32,11 @@ function buildItemsQuery(filters, { page = 0, pageSize, withCount = false } = {}
  * @returns {Promise<{ rows: object[], total: number }>}
  */
 export async function listItems(filters, { page = 0, pageSize } = {}) {
+  const start = page * pageSize
+
   const { data, error, count } = await buildItemsQuery(filters, {
-    page,
-    pageSize,
+    start,
+    end: start + pageSize - 1,
     withCount: true,
   })
 
@@ -46,26 +47,18 @@ export async function listItems(filters, { page = 0, pageSize } = {}) {
 
 /**
  * CAŁY zbiór spełniający filtry (bez paginacji) - do eksportu CSV.
+ * Pobieramy porcjami, bo PostgREST ma limit 1000 wierszy na zapytanie.
  */
 export async function listAllItems(filters) {
   const all = []
   let offset = 0
 
   for (;;) {
-    const sort = getSortOption(filters?.sortBy)
+    const { data, error } = await buildItemsQuery(filters, {
+      start: offset,
+      end: offset + EXPORT_CHUNK_SIZE - 1,
+    })
 
-    let query = supabase
-      .from('items')
-      .select('*')
-      .order(sort.column, {
-        ascending: sort.ascending,
-        nullsFirst: false,
-      })
-      .range(offset, offset + EXPORT_CHUNK_SIZE - 1)
-
-    query = applyFiltersToQuery(query, filters)
-
-    const { data, error } = await query
     if (error) throw error
 
     const rows = data || []
