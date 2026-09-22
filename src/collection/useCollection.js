@@ -40,16 +40,18 @@ export function useCollection({ fixedType } = {}) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const requestInProgressRef = useRef(false)
+  // Last-write-wins: każde wywołanie `run` startuje, ale tylko najnowsze
+  // zapisuje wynik. Dzięki temu przełączenie zakładki / odświeżenie w trakcie
+  // wczytywania NIE jest cicho porzucane (jak przy dawnym boolean-guardzie).
+  const seqRef = useRef(0)
   // Ref trzymany synchronicznie, żeby `apply()` widział najświeższy draft
   // bez czekania na re-render.
   const draftRef = useRef(draft)
 
   const run = useCallback(
     async ({ page = 0, append = false, filtersOverride } = {}) => {
-      if (requestInProgressRef.current) return
-
-      requestInProgressRef.current = true
+      const seq = seqRef.current + 1
+      seqRef.current = seq
 
       try {
         setLoading(true)
@@ -65,6 +67,8 @@ export function useCollection({ fixedType } = {}) {
           page,
           pageSize: PAGE_SIZE,
         })
+
+        if (seq !== seqRef.current) return
 
         const loaded = page * PAGE_SIZE + rows.length
         const hasMore = loaded < total
@@ -83,13 +87,14 @@ export function useCollection({ fixedType } = {}) {
 
         setPagination({ total, loaded, page, hasMore })
       } catch (err) {
+        if (seq !== seqRef.current) return
+
         console.error('Błąd filtrowania:', err)
         setError('Nie udało się wczytać wyników.')
         setItems(null)
         setPagination(emptyPagination())
       } finally {
-        requestInProgressRef.current = false
-        setLoading(false)
+        if (seq === seqRef.current) setLoading(false)
       }
     },
     [fixedType]
@@ -153,7 +158,7 @@ export function useCollection({ fixedType } = {}) {
   )
 
   const loadMore = useCallback(() => {
-    if (loading || requestInProgressRef.current || !pagination.hasMore) return
+    if (loading || !pagination.hasMore) return
 
     run({ page: pagination.page + 1, append: true })
   }, [loading, pagination.hasMore, pagination.page, run])
