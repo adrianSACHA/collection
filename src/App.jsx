@@ -20,6 +20,7 @@ import { countByType, listAllItems } from './collection/collectionApi'
 import { signOut } from './auth/authApi'
 import { useCollection } from './collection/useCollection'
 import { CollectionContext } from './collection/collectionContext'
+import { useToast } from './components/toast/toastContext'
 
 // Formularze ładowane leniwie - nie są potrzebne przy pierwszym renderze
 // listy, a ich kod jest spory (pola, zdjęcia, walidacja).
@@ -101,6 +102,7 @@ function GalleryIcon() {
  * (panel filtrów) czytają go przez CollectionContext.
  */
 function CollectionApp() {
+  const toast = useToast()
   const [view, setView] = useState(getInitialView)
   const [mode, setMode] = useState('lista')
   const [layout, setLayout] = useState(getInitialLayout) // 'lista' | 'galeria'
@@ -168,6 +170,14 @@ function CollectionApp() {
 
   // Eksport CSV: pobiera CAŁY zbiór spełniający bieżące filtry (nie tylko
   // wczytane strony listy) i pobiera plik.
+  //
+  // Informacja zwrotna idzie DWIEMA drogami, bo eksport kończy się PO
+  // zamknięciu kontekstu, z którego został uruchomiony:
+  //   - toast - warstwa globalna, przeżywa zamknięcie sheeta „Więcej" i widać
+  //     go na mobile (na desktopie sidebar jest ukryty poniżej `lg`),
+  //   - `exportError` - komunikat inline w sidebarze, zakotwiczony przy
+  //     przycisku eksportu; zostaje, bo na desktopie czyta się go lepiej
+  //     niż toast.
   const handleExportAll = useCallback(async () => {
     if (!draft || isExporting) return
 
@@ -178,18 +188,24 @@ function CollectionApp() {
       const allItems = await listAllItems(draft)
 
       if (allItems.length === 0) {
-        setExportError('Brak pozycji do eksportu dla bieżących filtrów.')
+        const message = 'Brak pozycji do eksportu dla bieżących filtrów.'
+        setExportError(message)
+        // Zwykła informacja, nie błąd - więc `info`, nie `error`.
+        toast.info(message)
         return
       }
 
       exportItemsToCsv(allItems, { scope: 'filtr' })
+      toast.success('Eksport CSV gotowy - plik został pobrany.')
     } catch (err) {
       console.error('Błąd eksportu CSV:', err)
-      setExportError('Nie udało się wyeksportować kolekcji.')
+      const message = 'Nie udało się wyeksportować kolekcji.'
+      setExportError(message)
+      toast.error(message)
     } finally {
       setIsExporting(false)
     }
-  }, [draft, isExporting])
+  }, [draft, isExporting, toast])
 
   const switchType = (nextType) => {
     setView(nextType)
