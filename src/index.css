@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Obracajaca sie moneta na ekranie wczytywania (AuthGate): pelny obrot
+   wokol osi Y. Uzywane jako `motion-safe:animate-coin-flip`, dlatego przy
+   prefers-reduced-motion moneta stoi - spójnie z resztą animacji w aplikacji
+   (wszystkie trzymamy za `motion-safe:`, patrz commit f6dc37d). */
+@theme {
+  --animate-coin-flip: coin-flip 3s linear infinite;
+
+  @keyframes coin-flip {
+    from {
+      transform: rotateY(0deg);
+    }
+    to {
+      transform: rotateY(360deg);
+    }
+  }
+}
