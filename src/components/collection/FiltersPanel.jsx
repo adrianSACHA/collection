@@ -22,6 +22,11 @@ export default function FiltersPanel({
   embedded = false,
   hideHeader = false,
   onClose,
+  // Prefiks id pól formularza. Panel renderuje się DWA razy w jednym dokumencie
+  // (sidebar desktopowy zawsze zamontowany + mobilny modal), więc bez prefiksu
+  // każde pole ma dwa elementy o tym samym id - co psuje powiązanie <label for>
+  // i nazwę dostępną pola (zgłoszenie 11).
+  idPrefix = 'filters',
 }) {
   const {
     draft,
@@ -36,6 +41,21 @@ export default function FiltersPanel({
 
   const isModal = Boolean(onClose)
   const [isExpanded, setIsExpanded] = useState(false)
+
+  // Id pola = prefiks instancji + nazwa. Muszą być unikalne w całym dokumencie,
+  // bo panel istnieje jednocześnie w sidebarze i w mobilnym modalu.
+  const ids = {
+    sortBy: `${idPrefix}-sort-by`,
+    search: `${idPrefix}-search`,
+    nominal: `${idPrefix}-nominal`,
+    kraj: `${idPrefix}-kraj`,
+    dataOd: `${idPrefix}-data-od`,
+    dataDo: `${idPrefix}-data-do`,
+    typ: `${idPrefix}-typ`,
+    znakWodny: `${idPrefix}-znak-wodny`,
+    mennica: `${idPrefix}-mennica`,
+    material: `${idPrefix}-material`,
+  }
 
   const { mennicaOptions, materialOptions } = useFilterOptions()
 
@@ -139,14 +159,14 @@ export default function FiltersPanel({
       <div className="space-y-4">
         <div>
           <label
-            htmlFor="sort-by"
+            htmlFor={ids.sortBy}
             className="mb-1 block text-sm font-medium text-gray-700"
           >
             Sortuj według
           </label>
 
           <select
-            id="sort-by"
+            id={ids.sortBy}
             value={draft.sortBy}
             onChange={handleSortChange}
             className={fieldClass}
@@ -161,14 +181,14 @@ export default function FiltersPanel({
 
         <div>
           <label
-            htmlFor="filter-search"
+            htmlFor={ids.search}
             className="mb-1 block text-sm font-medium text-gray-700"
           >
             Szukaj
           </label>
 
           <input
-            id="filter-search"
+            id={ids.search}
             type="search"
             value={draft.search}
             onChange={(event) => setField('search', event.target.value)}
@@ -184,14 +204,14 @@ export default function FiltersPanel({
 
         <div>
           <label
-            htmlFor="filter-nominal"
+            htmlFor={ids.nominal}
             className="mb-1 block text-sm font-medium text-gray-700"
           >
             Nominał
           </label>
 
           <input
-            id="filter-nominal"
+            id={ids.nominal}
             type="text"
             value={draft.nominal}
             onChange={(event) => setField('nominal', event.target.value)}
@@ -202,14 +222,14 @@ export default function FiltersPanel({
 
         <div>
           <label
-            htmlFor="filter-kraj"
+            htmlFor={ids.kraj}
             className="mb-1 block text-sm font-medium text-gray-700"
           >
             Emitent
           </label>
 
           <input
-            id="filter-kraj"
+            id={ids.kraj}
             type="text"
             value={draft.kraj}
             onChange={(event) => setField('kraj', event.target.value)}
@@ -238,14 +258,14 @@ export default function FiltersPanel({
         <div className="space-y-3">
           <div>
             <label
-              htmlFor="filter-data-od"
+              htmlFor={ids.dataOd}
               className="mb-1 block text-sm font-medium text-gray-700"
             >
               Data emisji od
             </label>
 
             <input
-              id="filter-data-od"
+              id={ids.dataOd}
               type="date"
               value={draft.dataOd}
               onChange={(event) => setField('dataOd', event.target.value)}
@@ -255,14 +275,14 @@ export default function FiltersPanel({
 
           <div>
             <label
-              htmlFor="filter-data-do"
+              htmlFor={ids.dataDo}
               className="mb-1 block text-sm font-medium text-gray-700"
             >
               Data emisji do
             </label>
 
             <input
-              id="filter-data-do"
+              id={ids.dataDo}
               type="date"
               value={draft.dataDo}
               onChange={(event) => setField('dataDo', event.target.value)}
@@ -274,14 +294,14 @@ export default function FiltersPanel({
         {!fixedType && (
           <div>
             <label
-              htmlFor="filter-typ"
+              htmlFor={ids.typ}
               className="mb-1 block text-sm font-medium text-gray-700"
             >
               Typ
             </label>
 
             <select
-              id="filter-typ"
+              id={ids.typ}
               value={draft.typ}
               onChange={(event) => setField('typ', event.target.value)}
               className={fieldClass}
@@ -295,14 +315,14 @@ export default function FiltersPanel({
 
         <div>
           <label
-            htmlFor="filter-znak-wodny"
+            htmlFor={ids.znakWodny}
             className="mb-1 block text-sm font-medium text-gray-700"
           >
             Znak wodny
           </label>
 
           <input
-            id="filter-znak-wodny"
+            id={ids.znakWodny}
             type="text"
             value={draft.znakWodny}
             onChange={(event) => setField('znakWodny', event.target.value)}
@@ -314,14 +334,14 @@ export default function FiltersPanel({
         {mennicaOptions.length > 0 && (
           <div>
             <label
-              htmlFor="filter-mennica"
+              htmlFor={ids.mennica}
               className="mb-1 block text-sm font-medium text-gray-700"
             >
               Mennica
             </label>
 
             <select
-              id="filter-mennica"
+              id={ids.mennica}
               value={draft.mennica}
               onChange={(event) => setField('mennica', event.target.value)}
               className={fieldClass}
@@ -340,14 +360,14 @@ export default function FiltersPanel({
         {materialOptions.length > 0 && (
           <div>
             <label
-              htmlFor="filter-material"
+              htmlFor={ids.material}
               className="mb-1 block text-sm font-medium text-gray-700"
             >
               Materiał / stop
             </label>
 
             <select
-              id="filter-material"
+              id={ids.material}
               value={draft.material}
               onChange={(event) => setField('material', event.target.value)}
               className={fieldClass}

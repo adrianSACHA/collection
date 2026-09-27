@@ -349,7 +349,7 @@ export default function DesktopSidebar({
             id="sidebar-filters-panel"
             className={showFilters && filtersOpen ? 'mt-1' : 'hidden'}
           >
-            <FiltersPanel embedded />
+            <FiltersPanel embedded idPrefix="sidebar-filters" />
           </div>
         </div>
 

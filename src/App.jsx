@@ -328,6 +328,7 @@ function CollectionApp() {
                     <FiltersPanel
                       hideHeader
                       onClose={closeMobileFilters}
+                      idPrefix="mobile-filters"
                     />
                   </FilterModal>
                 </div>
