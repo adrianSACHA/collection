@@ -21,6 +21,7 @@ function countActiveFilters(draft) {
     draft.znakWodny,
     draft.mennica,
     draft.material,
+    draft.doKupienia,
   ].filter((value) => value && String(value).trim() !== '').length
 }
 

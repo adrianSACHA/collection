@@ -17,7 +17,7 @@ const CSV_COLUMNS = [
   { key: 'seria', label: 'Seria' },
   { key: 'kod_drukarni', label: 'BZ - FZ' },
   { key: 'kn_seria', label: 'KN' },
-  { key: 'seria_litera', label: 'Seria Litera' },
+  { key: 'koncowka_serii', label: 'Litera końcowa' },
   { key: 'data_wydania', label: 'Data emisji' },
   { key: 'znak_wodny', label: 'Znak wodny' },
   { key: 'unc', label: 'UNC' },

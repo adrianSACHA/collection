@@ -33,6 +33,7 @@ create table if not exists items (
   miasto_wydania text,
   seria text,
   kn_seria text,
+  koncowka_serii text,
   nadruk text,
   kod_drukarni text,
   znak_wodny text,

@@ -39,16 +39,19 @@ export const SORT_OPTIONS = [
     column: 'data_wydania',
     ascending: true,
   },
+  // KN / numer to kolumna tekstowa, więc sortowanie jest leksykograficzne
+  // („100" przed „20"). Przy numerach o stałej długości / z zerami wiodącymi
+  // to nie przeszkadza (świadoma decyzja: v1 bez migracji na kolumnę liczbową).
   {
-    value: 'cena_asc',
-    label: 'Cena zakupu: rosnąco',
-    column: 'cena_zakupu',
+    value: 'kn_asc',
+    label: 'KN / numer: rosnąco',
+    column: 'kn_seria',
     ascending: true,
   },
   {
-    value: 'cena_desc',
-    label: 'Cena zakupu: malejąco',
-    column: 'cena_zakupu',
+    value: 'kn_desc',
+    label: 'KN / numer: malejąco',
+    column: 'kn_seria',
     ascending: false,
   },
   {
@@ -76,6 +79,7 @@ export function getDefaultFilters(fixedType) {
     znakWodny: '',
     mennica: '',
     material: '',
+    doKupienia: false,
     sortBy: DEFAULT_SORT,
   }
 }
@@ -96,14 +100,23 @@ const SEARCH_COLUMNS = [
 
 /**
  * Buduje warunek OR dla pola "Szukaj" (PostgREST `.or(...)`).
- * Szuka frazy we wszystkich kolumnach tekstowych, a gdy wpisano
- * samą liczbę - dodatkowo po dokładnym roku. Zwraca null, gdy brak frazy.
+ * Fraza trafia wyłącznie na POCZĄTKU wartości albo na POCZĄTKU SŁOWA
+ * (po spacji) - nigdy w środku liczby/wyrazu. Dzięki temu „5" nie łapie
+ * „25", a „Londyn" nadal trafia „Nowy Londyn". Gdy wpisano samą liczbę,
+ * dodatkowo szukamy po dokładnym roku. Zwraca null, gdy brak frazy.
  */
 export function buildSearchCondition(search) {
   const term = search?.trim()
   if (!term) return null
 
-  const conditions = SEARCH_COLUMNS.map((col) => `${col}.ilike.%${term}%`)
+  const conditions = []
+
+  for (const col of SEARCH_COLUMNS) {
+    // Początek wartości: „5" trafia „5 zł".
+    conditions.push(`${col}.ilike.${term}%`)
+    // Początek słowa (po spacji): „Londyn" trafia „Nowy Londyn".
+    conditions.push(`${col}.ilike.% ${term}%`)
+  }
 
   if (/^\d+$/.test(term)) {
     conditions.push(`rok.eq.${term}`)
@@ -152,6 +165,10 @@ export function applyFiltersToQuery(query, filters) {
 
   if (filters.material?.trim()) {
     query = query.eq('material', filters.material.trim())
+  }
+
+  if (filters.doKupienia) {
+    query = query.eq('do_kupienia', true)
   }
 
   return query

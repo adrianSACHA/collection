@@ -49,6 +49,7 @@ export default function FiltersPanel({
     search: `${idPrefix}-search`,
     nominal: `${idPrefix}-nominal`,
     kraj: `${idPrefix}-kraj`,
+    doKupienia: `${idPrefix}-do-kupienia`,
     dataOd: `${idPrefix}-data-od`,
     dataDo: `${idPrefix}-data-do`,
     typ: `${idPrefix}-typ`,
@@ -76,6 +77,11 @@ export default function FiltersPanel({
       key: 'kraj',
       label: `Emitent: ${draft.kraj.trim()}`,
       onClear: () => setField('kraj', ''),
+    },
+    draft.doKupienia && {
+      key: 'doKupienia',
+      label: 'Do kupienia',
+      onClear: () => setField('doKupienia', false),
     },
     draft.dataOd.trim() && {
       key: 'dataOd',
@@ -236,6 +242,25 @@ export default function FiltersPanel({
             placeholder="np. Polska"
             className={fieldClassPlaceholder}
           />
+        </div>
+
+        {/* Filtr logiczny: pokaż wyłącznie pozycje oznaczone jako „do kupienia".
+            Label otacza input, więc powiązanie jest niejawne (bez htmlFor). */}
+        <div>
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-gray-300 px-3 py-2 transition-colors hover:bg-gray-50">
+            <input
+              id={ids.doKupienia}
+              type="checkbox"
+              checked={Boolean(draft.doKupienia)}
+              onChange={(event) =>
+                setField('doKupienia', event.target.checked)
+              }
+              className="h-5 w-5 rounded border-gray-300"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Tylko do kupienia
+            </span>
+          </label>
         </div>
       </div>
 
